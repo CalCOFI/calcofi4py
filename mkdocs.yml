@@ -1,0 +1,55 @@
+# Documentation site for calcofi4py — the Python "pkgdown": mkdocs-material +
+# mkdocstrings render the package docstrings into an API reference. Built and
+# deployed to the gh-pages branch by .github/workflows/docs.yml on every push to
+# main; served at https://calcofi.io/calcofi4py/ (CalCOFI org Pages domain).
+site_name: calcofi4py
+site_url: https://calcofi.io/calcofi4py/
+site_description: CalCOFI Python helpers — public database releases (DuckDB over Parquet) and the CTD team's PostgreSQL working database
+repo_url: https://github.com/CalCOFI/calcofi4py
+repo_name: CalCOFI/calcofi4py
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue grey
+      toggle: {icon: material/brightness-7, name: dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue grey
+      toggle: {icon: material/brightness-4, name: light mode}
+  features:
+    - navigation.sections
+    - content.code.copy
+    - content.action.edit
+
+nav:
+  - Home: index.md
+  - API reference: reference.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          options:
+            docstring_style: sphinx
+            show_source: true
+            show_root_heading: true
+            members_order: source
+            separate_signature: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - toc: {permalink: true}
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/CalCOFI
+    - icon: material/web
+      link: https://calcofi.io
