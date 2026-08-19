@@ -1,0 +1,39 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "calcofi4py"
+version = "0.1.0"
+description = "CalCOFI Python helpers: query the public database releases (DuckDB over Parquet) and the CTD team's PostgreSQL working database"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+  { name = "Ben Best", email = "ben@ecoquants.com" },
+]
+keywords = ["calcofi", "oceanography", "duckdb", "postgresql", "parquet"]
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Topic :: Scientific/Engineering :: Oceanography",
+]
+dependencies = [
+  "duckdb>=1.0",
+  "psycopg[binary]>=3.1",
+]
+
+[project.optional-dependencies]
+pandas = ["pandas>=2.0"]
+dev = ["pytest>=8", "pandas>=2.0"]
+
+[project.urls]
+Homepage = "https://github.com/CalCOFI/calcofi4py"
+Documentation = "https://calcofi.io/docs/server-access.html"
+"R sibling" = "https://calcofi.io/calcofi4r"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/calcofi4py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
