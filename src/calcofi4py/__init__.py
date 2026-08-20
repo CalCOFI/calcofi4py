@@ -5,6 +5,11 @@ Two data stores, two verbs:
 - **Public releases** (immutable Parquet on GCS, no credentials):
   ``cc_get_db()`` -> DuckDB connection with every release table as a view;
   ``cc_query(sql)`` for one-shots; ``cc_list_versions()`` / ``cc_catalog()``.
+- **CTD QA/QC** (schema ``ctd`` in PostgreSQL): ``cc_ctd_casts()`` / ``cc_ctd_scans()``,
+  portable QC rules (``cc_qc_spike()``, ``cc_qc_sensor_pair()``, ``cc_qc_range()``),
+  the flag ledger (``cc_propose_flags()`` / ``cc_flags()``), clean products
+  (``cc_bin_1m()``), and plotly viz (``cc_station_map()``, ``cc_profile_plot()``,
+  ``cc_section_plot()``).
 - **The CTD team's PostgreSQL working database** (private, over SSH):
   ``cc_pg_connect()`` (psycopg; role + password from ~/.pgpass),
   ``cc_pg_tunnel()`` / ``cc_pg_tunnel_close()`` (background `ssh -N`),
@@ -22,6 +27,19 @@ from .release import (
     cc_query,
     cc_resolve_version,
 )
+from .ctd import (
+    cc_bin_1m,
+    cc_ctd_casts,
+    cc_ctd_scans,
+    cc_flags,
+    cc_profile_plot,
+    cc_propose_flags,
+    cc_qc_range,
+    cc_qc_sensor_pair,
+    cc_qc_spike,
+    cc_section_plot,
+    cc_station_map,
+)
 from .postgres import (
     cc_on_server,
     cc_pg_attach,
@@ -32,7 +50,18 @@ from .postgres import (
 )
 
 __all__ = [
+    "cc_bin_1m",
     "cc_catalog",
+    "cc_ctd_casts",
+    "cc_ctd_scans",
+    "cc_flags",
+    "cc_profile_plot",
+    "cc_propose_flags",
+    "cc_qc_range",
+    "cc_qc_sensor_pair",
+    "cc_qc_spike",
+    "cc_section_plot",
+    "cc_station_map",
     "cc_get_db",
     "cc_list_versions",
     "cc_on_server",
@@ -44,4 +73,4 @@ __all__ = [
     "cc_query",
     "cc_resolve_version",
 ]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
