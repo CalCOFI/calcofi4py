@@ -11,15 +11,18 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  # dark by default (first palette entry), light one toggle away
   palette:
-    - media: "(prefers-color-scheme: light)"
-      scheme: default
-      primary: blue grey
-      toggle: {icon: material/brightness-7, name: dark mode}
-    - media: "(prefers-color-scheme: dark)"
-      scheme: slate
-      primary: blue grey
-      toggle: {icon: material/brightness-4, name: light mode}
+    - scheme: slate
+      primary: custom
+      accent: yellow
+      toggle: {icon: material/brightness-7, name: light mode}
+    - scheme: default
+      primary: custom
+      accent: indigo
+      toggle: {icon: material/brightness-4, name: dark mode}
   features:
     - navigation.sections
     - content.code.copy
@@ -38,8 +41,13 @@ plugins:
             docstring_style: sphinx
             show_source: true
             show_root_heading: true
+            show_root_full_path: false     # cc_get_db, not calcofi4py.release.cc_get_db
+            heading_level: 3               # functions sit UNDER the ## section headings
             members_order: source
             separate_signature: true
+
+extra_css:
+  - stylesheets/extra.css
 
 markdown_extensions:
   - admonition

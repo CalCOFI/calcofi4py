@@ -1,4 +1,4 @@
-# calcofi4py
+# calcofi4py <img src="https://calcofi.io/calcofi4py/assets/logo.svg" align="right" width="130" alt="calcofi4py logo"/>
 
 CalCOFI Python helpers — the thin sibling of [calcofi4r](https://calcofi.io/calcofi4r).
 Two data stores, a few verbs, no credentials in code.
