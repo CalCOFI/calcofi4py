@@ -373,10 +373,13 @@ def cc_station_map(casts: "pd.DataFrame", zoom: float = 4.7, title: str | None =
     source files carry ``-99`` positions are absent from the map but present in
     every table.
 
-    Markers and labels are **separate traces** on purpose: a single
-    markers+text scattermap trace renders through MapLibre's sprite-icon symbol
-    layer, and the basemap style has no such icons — the whole trace silently
-    disappears. Text-only traces render as glyphs and are safe.
+    One ``markers+text`` trace, and the labels MUST be strings: integer ``text``
+    serializes to plotly's binary typed-array encoding, which the symbol layer
+    treats as icon names ("Image -15 could not be loaded") and drops. The
+    opposite decomposition — a separate ``mode="text"`` trace — does not work
+    either: plotly 3.7 never creates the symbol layer for a text-only
+    scattermap trace, so the labels silently vanish. String labels on the
+    combined trace is the one configuration that renders.
 
     :param casts: from :func:`cc_ctd_casts`
     :param zoom: initial map zoom (the CalCOFI grid fits at ~4.7)
@@ -396,16 +399,14 @@ def cc_station_map(casts: "pd.DataFrame", zoom: float = 4.7, title: str | None =
     custom = agg[["station", "time", "directions", "scans", "depth_max"]].astype(str).values
     fig = go.Figure()
     fig.add_scattermap(
-        lat=agg.lat, lon=agg.lon, mode="markers",
+        lat=agg.lat, lon=agg.lon, mode="markers+text",
         marker=dict(size=10, color="#1f77b4"), name="",
-        customdata=custom, text=labels,
+        text=labels, textposition="top center",
+        textfont=dict(size=9, color="#1f2d3d"),
+        customdata=custom,
         hovertemplate=("<b>cast %{text}</b><br>station %{customdata[0]}<br>"
                        "%{customdata[1]}<br>casts: %{customdata[2]} · scans: %{customdata[3]}<br>"
                        "max depth %{customdata[4]} m<br>%{lat:.3f}, %{lon:.3f}<extra></extra>"))
-    fig.add_scattermap(
-        lat=agg.lat, lon=agg.lon, mode="text", text=labels,
-        textfont=dict(size=9, color="#1f2d3d"), textposition="top center",
-        hoverinfo="skip", name="")
     fig.update_layout(
         map=dict(style="carto-positron", zoom=zoom,
                  center=dict(lat=float(agg.lat.mean()), lon=float(agg.lon.mean()))),

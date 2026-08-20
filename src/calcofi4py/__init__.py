@@ -79,4 +79,4 @@ __all__ = [
     "cc_resolve_version",
     "cc_session_info",
 ]
-__version__ = "0.3.2"
+__version__ = "0.3.3"
