@@ -35,4 +35,6 @@ products, and plot — see the worked notebook
 ::: calcofi4py.ctd.cc_bin_1m
 ::: calcofi4py.ctd.cc_station_map
 ::: calcofi4py.ctd.cc_profile_plot
+::: calcofi4py.ctd.cc_profile_explorer
 ::: calcofi4py.ctd.cc_section_plot
+::: calcofi4py.ctd.cc_flag_summary

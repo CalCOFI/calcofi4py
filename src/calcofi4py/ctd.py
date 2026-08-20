@@ -41,7 +41,9 @@ __all__ = [
     "cc_bin_1m",
     "cc_station_map",
     "cc_profile_plot",
+    "cc_profile_explorer",
     "cc_section_plot",
+    "cc_flag_summary",
 ]
 
 _IDENT_OK = set("abcdefghijklmnopqrstuvwxyz0123456789_")
@@ -69,11 +71,14 @@ def cc_ctd_casts(con, study: str, best_only: bool = True) -> "pd.DataFrame":
     :param study: source cruise id as in the files, e.g. ``"2607SH"``
     :param best_only: only the best data stage per cruise × direction (default);
         ``False`` includes superseded preliminary/duplicate archives
-    :return: DataFrame with ``file_id, cast_id, cast_dir, sta_id, line, sta,
-        datetime_utc, lat, lon, n_scans, depth_min, depth_max, cruise_key``
+    :return: DataFrame with ``cast_seq`` (the cast number shared by a down/up
+        pair, from ``cast_id`` — ``"2607_001d"`` → 1), ``file_id, cast_id,
+        cast_dir, sta_id, line, sta, datetime_utc, lat, lon, n_scans,
+        depth_min, depth_max, cruise_key``
     """
     return _read_sql(con, """
-        SELECT file_id, cast_id, cast_dir, ord_occ, sta_id, line, sta,
+        SELECT (regexp_match(cast_id, '_0*([0-9]+)'))[1]::int AS cast_seq,
+               file_id, cast_id, cast_dir, ord_occ, sta_id, line, sta,
                datetime_utc, lat, lon, n_scans, depth_min, depth_max,
                cruise_key, data_stage, is_best_stage
         FROM ctd.cast WHERE study = %s AND (is_best_stage OR NOT %s)
@@ -107,7 +112,9 @@ def cc_ctd_scans(
         where += " AND s.cast_id = %s"
         params.append(cast_id)
     return _read_sql(con, f"""
-        SELECT s.scan_id, s.cast_id, f.cast_dir, s.row_num, s.depth,
+        SELECT s.scan_id, s.cast_id,
+               (regexp_match(s.cast_id, '_0*([0-9]+)'))[1]::int AS cast_seq,
+               f.cast_dir, s.row_num, s.depth,
                s.date_time_utc, s.lat_dec, s.lon_dec, {extra}
         FROM {view} s JOIN ctd.file f USING (file_id)
         WHERE {where}
@@ -277,7 +284,7 @@ def cc_flags(con, study: str | None = None, status: str | None = None) -> "pd.Da
         conds.append("f.status = %s")
         params.append(status)
     return _read_sql(con, f"""
-        SELECT f.flag_id, fi.study, s.cast_id, s.depth, f.variable, f.qual_code,
+        SELECT f.flag_id, f.scan_id, fi.study, s.cast_id, s.depth, f.variable, f.qual_code,
                q.label AS qual_label, f.proposed_value, f.rule_key, f.reason,
                f.status, f.created_by, f.created_at, f.reviewed_by, f.review_note
         FROM ctd.flag f
@@ -355,21 +362,37 @@ def _px():
         raise ImportError("viz helpers need plotly: pip install 'calcofi4py[viz]'") from e
 
 
-def cc_station_map(casts: "pd.DataFrame", color: str = "cast_dir", title: str | None = None):
-    """Map of cast positions, labeled by station, from :func:`cc_ctd_casts`.
+def cc_station_map(casts: "pd.DataFrame", title: str | None = None):
+    """Map of station occupations: **one labeled marker per** ``cast_seq``.
 
-    Casts without a position (``-99`` sentinels in the originals) are dropped
-    from the map — they are still in the table.
+    Every occupation has a down- and an upcast at the same position, so plotting
+    casts individually just stacks markers; here the pair collapses to one point
+    (downcast position preferred) labeled with its ``cast_seq`` — the number to
+    cross-reference in every other figure and table. Hover carries the station,
+    time, both directions' scan counts and the max depth. Occupations whose
+    source files carry ``-99`` positions are absent from the map but present in
+    every table.
+
+    :param casts: from :func:`cc_ctd_casts`
     """
     px = _px()
     d = casts.dropna(subset=["lat", "lon"]).copy()
-    d["station"] = d["sta_id"].fillna("?")
+    agg = (d.sort_values("cast_dir")                      # D before U
+           .groupby("cast_seq")
+           .agg(lat=("lat", "first"), lon=("lon", "first"),
+                station=("sta_id", "first"), time=("datetime_utc", "min"),
+                directions=("cast_dir", lambda x: "+".join(x)),
+                scans=("n_scans", "sum"), depth_max=("depth_max", "max"))
+           .reset_index())
     fig = px.scatter_map(
-        d, lat="lat", lon="lon", color=color,
-        hover_name="cast_id",
-        hover_data={"station": True, "datetime_utc": True, "depth_max": True,
-                    "lat": ":.3f", "lon": ":.3f"},
-        zoom=5, height=520, title=title)
+        agg, lat="lat", lon="lon", text="cast_seq",
+        hover_name="cast_seq",
+        hover_data={"station": True, "time": True, "directions": True,
+                    "scans": True, "depth_max": True,
+                    "lat": ":.3f", "lon": ":.3f", "cast_seq": False},
+        zoom=5, height=560, title=title)
+    fig.update_traces(marker=dict(size=10, color="#1f77b4"),
+                      textposition="top center", textfont=dict(size=9))
     fig.update_layout(map_style="carto-positron",
                       margin=dict(l=0, r=0, t=40 if title else 0, b=0))
     return fig
@@ -420,23 +443,131 @@ def cc_section_plot(
     units: str = "",
     title: str | None = None,
 ):
-    """Section through the cruise: cast sequence (x) × depth (y), colored by value.
+    """Section through the cruise: ``cast_seq`` (x) × depth (y), colored by value.
 
-    Downcasts only, ordered by time — a quick-look transect, not an interpolated
-    product (each vertical stripe is one cast's scans).
+    Downcasts only — a quick-look transect, not an interpolated product (each
+    vertical stripe is one cast's scans). The x axis is the same ``cast_seq``
+    that labels :func:`cc_station_map` and indexes :func:`cc_flag_summary`.
     """
     px = _px()
-    order = (casts[casts.cast_dir == "D"]
-             .sort_values("datetime_utc")["cast_id"].tolist())
     d = scans[(scans.cast_dir == "D") & scans[column].notna()].copy()
-    d = d[d.cast_id.isin(order)]
-    d["cast_order"] = d["cast_id"].map({c: i for i, c in enumerate(order)})
     fig = px.scatter(
-        d, x="cast_order", y="depth", color=column,
+        d, x="cast_seq", y="depth", color=column,
         color_continuous_scale="Viridis", height=520, title=title,
-        hover_data={"cast_id": True, "depth": ":.1f", column: ":.3f"},
-        labels={"cast_order": "cast (time order)", "depth": "depth (m)",
+        hover_data={"cast_id": True, "cast_seq": True, "depth": ":.1f", column: ":.3f"},
+        labels={"cast_seq": "cast_seq", "depth": "depth (m)",
                 column: f"{column} ({units})" if units else column})
     fig.update_traces(marker=dict(size=3))
     fig.update_yaxes(autorange="reversed")
     return fig
+
+
+def cc_profile_explorer(
+    scans: "pd.DataFrame",
+    column: str = "tempave",
+    flags: "pd.DataFrame | None" = None,
+    units: str = "",
+    title: str | None = None,
+    default: int | str = "all",
+):
+    """Depth profiles with a **dropdown selector per** ``cast_seq``.
+
+    The all-casts envelope is unreadable at cruise scale, so this builds one
+    down + up trace pair per occupation and a dropdown ("all casts" + every
+    ``cast_seq``) that isolates a single pair — with its flagged scans (red ×)
+    when ``flags`` rows fall on it.
+
+    :param flags: rows with ``scan_id`` (from :func:`cc_qc_spike`,
+        :func:`cc_flags`, …) overlaid per selected cast
+    :param default: initially selected option — ``"all"`` (default) or a
+        ``cast_seq`` number (e.g. the worst from :func:`cc_flag_summary`)
+    """
+    px = _px()  # noqa: F841  (ensures plotly is installed)
+    import plotly.graph_objects as go
+
+    d = scans.dropna(subset=[column]).copy().sort_values(["cast_seq", "cast_dir", "depth"])
+    flag_ids = set(flags.scan_id) if flags is not None and len(flags) else set()
+    seqs = sorted(d.cast_seq.dropna().unique())
+    fig = go.Figure()
+    groups: list[int] = []          # trace -> cast_seq
+    for seq in seqs:
+        for cdir, color, name in (("D", "#1f77b4", "down"), ("U", "#ff7f0e", "up")):
+            t = d[(d.cast_seq == seq) & (d.cast_dir == cdir)]
+            if not len(t):
+                continue
+            fig.add_scatter(
+                x=t[column], y=t.depth, mode="lines", legendgroup=name,
+                name=f"{name} {int(seq)}", showlegend=False,
+                line=dict(width=1, color=color), opacity=0.5,
+                hovertemplate=f"cast {int(seq)}{cdir.lower()} · depth %{{y:.1f}} m · %{{x:.3f}}<extra></extra>")
+            groups.append(int(seq))
+        if flag_ids:
+            f = d[(d.cast_seq == seq) & d.scan_id.isin(flag_ids)]
+            if len(f):
+                fig.add_scatter(
+                    x=f[column], y=f.depth, mode="markers", name=f"flagged {int(seq)}",
+                    showlegend=False,
+                    marker=dict(symbol="x", size=9, color="crimson"),
+                    hovertemplate=f"FLAG cast {int(seq)} · depth %{{y:.1f}} m · %{{x:.3f}}<extra></extra>")
+                groups.append(int(seq))
+
+    n = len(groups)
+    buttons = [dict(label="all casts", method="update",
+                    args=[{"visible": [True] * n}])]
+    for seq in seqs:
+        buttons.append(dict(
+            label=f"cast {int(seq)}", method="update",
+            args=[{"visible": [g == int(seq) for g in groups]}]))
+    default_idx = 0 if default == "all" else 1 + seqs.index(default)
+    if default != "all":
+        vis = buttons[default_idx]["args"][0]["visible"]
+        for tr, v in zip(fig.data, vis):
+            tr.visible = v
+    fig.update_layout(
+        updatemenus=[dict(buttons=buttons, active=default_idx, x=1.0, xanchor="right",
+                          y=1.12, yanchor="top")],
+        height=600, title=title,
+        xaxis_title=f"{column} ({units})" if units else column,
+        yaxis_title="depth (m)")
+    fig.update_yaxes(autorange="reversed")
+    return fig
+
+
+def cc_flag_summary(
+    ledger: "pd.DataFrame",
+    scans: "pd.DataFrame",
+    column: str,
+) -> "pd.DataFrame":
+    """Flags rolled up per ``cast_seq`` — the triage table.
+
+    Joins the ledger (:func:`cc_flags`) to the scans it points at and answers
+    "which casts most need a human": flags by rule, the depth span and value
+    range flagged, and the share of the cast's scans affected. Sort descending
+    and start at the top; casts absent from the table have no flags.
+
+    :param ledger: from :func:`cc_flags` (any statuses; filter first if wanted)
+    :param scans: from :func:`cc_ctd_scans` — supplies ``cast_seq`` and values
+    :param column: the measurement column the flags refer to
+    :return: one row per flagged ``cast_seq``: ``n_flags``, per-``rule_key``
+        counts, ``depth_min/depth_max``, ``value_min/value_max``,
+        ``pct_scans_flagged``
+    """
+    j = ledger.merge(
+        scans[["scan_id", "cast_seq", column]], on="scan_id", how="inner")
+    if not len(j):
+        return pd.DataFrame(columns=["cast_seq", "n_flags"])
+    per_rule = (j.pivot_table(index="cast_seq", columns="rule_key",
+                              values="flag_id", aggfunc="count", fill_value=0)
+                .add_prefix("n_"))
+    base = (j.groupby("cast_seq")
+            .agg(n_flags=("flag_id", "count"),
+                 depth_min=("depth", "min"), depth_max=("depth", "max"),
+                 value_min=(column, "min"), value_max=(column, "max")))
+    n_scans = scans.groupby("cast_seq").scan_id.count().rename("n_scans")
+    out = (base.join(per_rule).join(n_scans)
+           .assign(pct_scans_flagged=lambda x: (100 * x.n_flags / x.n_scans).round(2))
+           .drop(columns="n_scans")
+           .sort_values("n_flags", ascending=False)
+           .reset_index())
+    out["cast_seq"] = out["cast_seq"].astype(int)
+    return out

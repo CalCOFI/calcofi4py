@@ -32,6 +32,8 @@ from .ctd import (
     cc_ctd_casts,
     cc_ctd_scans,
     cc_flags,
+    cc_flag_summary,
+    cc_profile_explorer,
     cc_profile_plot,
     cc_propose_flags,
     cc_qc_range,
@@ -54,7 +56,9 @@ __all__ = [
     "cc_catalog",
     "cc_ctd_casts",
     "cc_ctd_scans",
+    "cc_flag_summary",
     "cc_flags",
+    "cc_profile_explorer",
     "cc_profile_plot",
     "cc_propose_flags",
     "cc_qc_range",
@@ -73,4 +77,4 @@ __all__ = [
     "cc_query",
     "cc_resolve_version",
 ]
-__version__ = "0.2.0"
+__version__ = "0.3.0"
