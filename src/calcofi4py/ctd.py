@@ -362,7 +362,7 @@ def _px():
         raise ImportError("viz helpers need plotly: pip install 'calcofi4py[viz]'") from e
 
 
-def cc_station_map(casts: "pd.DataFrame", title: str | None = None):
+def cc_station_map(casts: "pd.DataFrame", zoom: float = 4.7, title: str | None = None):
     """Map of station occupations: **one labeled marker per** ``cast_seq``.
 
     Every occupation has a down- and an upcast at the same position, so plotting
@@ -373,9 +373,17 @@ def cc_station_map(casts: "pd.DataFrame", title: str | None = None):
     source files carry ``-99`` positions are absent from the map but present in
     every table.
 
+    Markers and labels are **separate traces** on purpose: a single
+    markers+text scattermap trace renders through MapLibre's sprite-icon symbol
+    layer, and the basemap style has no such icons — the whole trace silently
+    disappears. Text-only traces render as glyphs and are safe.
+
     :param casts: from :func:`cc_ctd_casts`
+    :param zoom: initial map zoom (the CalCOFI grid fits at ~4.7)
     """
-    px = _px()
+    _px()  # ensures plotly is installed
+    import plotly.graph_objects as go
+
     d = casts.dropna(subset=["lat", "lon"]).copy()
     agg = (d.sort_values("cast_dir")                      # D before U
            .groupby("cast_seq")
@@ -384,21 +392,25 @@ def cc_station_map(casts: "pd.DataFrame", title: str | None = None):
                 directions=("cast_dir", lambda x: "+".join(x)),
                 scans=("n_scans", "sum"), depth_max=("depth_max", "max"))
            .reset_index())
-    # text MUST be strings: an integer column serializes to plotly's binary typed-array
-    # encoding, which plotly.js does not accept for `text` — the whole trace silently
-    # fails to render (empty map). Learned the hard way.
-    agg["label"] = agg["cast_seq"].astype(int).astype(str)
-    fig = px.scatter_map(
-        agg, lat="lat", lon="lon", text="label",
-        hover_name="label",
-        hover_data={"station": True, "time": True, "directions": True,
-                    "scans": True, "depth_max": True,
-                    "lat": ":.3f", "lon": ":.3f", "label": False},
-        zoom=5, height=560, title=title)
-    fig.update_traces(marker=dict(size=10, color="#1f77b4"),
-                      textposition="top center", textfont=dict(size=9))
-    fig.update_layout(map_style="carto-positron",
-                      margin=dict(l=0, r=0, t=40 if title else 0, b=0))
+    labels = agg["cast_seq"].astype(int).astype(str).tolist()
+    custom = agg[["station", "time", "directions", "scans", "depth_max"]].astype(str).values
+    fig = go.Figure()
+    fig.add_scattermap(
+        lat=agg.lat, lon=agg.lon, mode="markers",
+        marker=dict(size=10, color="#1f77b4"), name="",
+        customdata=custom, text=labels,
+        hovertemplate=("<b>cast %{text}</b><br>station %{customdata[0]}<br>"
+                       "%{customdata[1]}<br>casts: %{customdata[2]} · scans: %{customdata[3]}<br>"
+                       "max depth %{customdata[4]} m<br>%{lat:.3f}, %{lon:.3f}<extra></extra>"))
+    fig.add_scattermap(
+        lat=agg.lat, lon=agg.lon, mode="text", text=labels,
+        textfont=dict(size=9, color="#1f2d3d"), textposition="top center",
+        hoverinfo="skip", name="")
+    fig.update_layout(
+        map=dict(style="carto-positron", zoom=zoom,
+                 center=dict(lat=float(agg.lat.mean()), lon=float(agg.lon.mean()))),
+        showlegend=False, height=560, title=title,
+        margin=dict(l=0, r=0, t=40 if title else 0, b=0))
     return fig
 
 
