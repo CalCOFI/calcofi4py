@@ -77,4 +77,4 @@ __all__ = [
     "cc_query",
     "cc_resolve_version",
 ]
-__version__ = "0.3.0"
+__version__ = "0.3.1"

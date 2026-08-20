@@ -384,12 +384,16 @@ def cc_station_map(casts: "pd.DataFrame", title: str | None = None):
                 directions=("cast_dir", lambda x: "+".join(x)),
                 scans=("n_scans", "sum"), depth_max=("depth_max", "max"))
            .reset_index())
+    # text MUST be strings: an integer column serializes to plotly's binary typed-array
+    # encoding, which plotly.js does not accept for `text` — the whole trace silently
+    # fails to render (empty map). Learned the hard way.
+    agg["label"] = agg["cast_seq"].astype(int).astype(str)
     fig = px.scatter_map(
-        agg, lat="lat", lon="lon", text="cast_seq",
-        hover_name="cast_seq",
+        agg, lat="lat", lon="lon", text="label",
+        hover_name="label",
         hover_data={"station": True, "time": True, "directions": True,
                     "scans": True, "depth_max": True,
-                    "lat": ":.3f", "lon": ":.3f", "cast_seq": False},
+                    "lat": ":.3f", "lon": ":.3f", "label": False},
         zoom=5, height=560, title=title)
     fig.update_traces(marker=dict(size=10, color="#1f77b4"),
                       textposition="top center", textfont=dict(size=9))
@@ -523,10 +527,13 @@ def cc_profile_explorer(
         vis = buttons[default_idx]["args"][0]["visible"]
         for tr, v in zip(fig.data, vis):
             tr.visible = v
+    # the modebar appears on hover at the TOP-RIGHT — a menu there becomes unclickable,
+    # so the selector lives top-left and the title moves to the center
     fig.update_layout(
-        updatemenus=[dict(buttons=buttons, active=default_idx, x=1.0, xanchor="right",
-                          y=1.12, yanchor="top")],
-        height=600, title=title,
+        updatemenus=[dict(buttons=buttons, active=default_idx, x=0.0, xanchor="left",
+                          y=1.15, yanchor="top")],
+        height=600, title=dict(text=title, x=0.5, xanchor="center"),
+        margin=dict(t=90),
         xaxis_title=f"{column} ({units})" if units else column,
         yaxis_title="depth (m)")
     fig.update_yaxes(autorange="reversed")
