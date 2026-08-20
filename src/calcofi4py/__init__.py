@@ -20,6 +20,7 @@ Docs: https://calcofi.io/docs/server-access.html and
 https://calcofi.io/docs/data-access.html
 """
 
+from .session import cc_session_info
 from .release import (
     cc_catalog,
     cc_get_db,
@@ -76,5 +77,6 @@ __all__ = [
     "cc_pgpass_user",
     "cc_query",
     "cc_resolve_version",
+    "cc_session_info",
 ]
-__version__ = "0.3.1"
+__version__ = "0.3.2"

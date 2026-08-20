@@ -19,3 +19,11 @@ def test_qc_range_requires_a_bound():
     from calcofi4py.ctd import cc_qc_range
     with pytest.raises(ValueError):
         cc_qc_range(None, "2607SH", "tempave")
+
+
+def test_session_info_reports_packages_and_repo():
+    from calcofi4py import cc_session_info
+
+    txt = cc_session_info(repos={"self": (".", None)})
+    assert "python" in txt and "calcofi4py" in txt
+    assert "self" in txt
