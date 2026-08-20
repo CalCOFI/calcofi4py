@@ -430,7 +430,7 @@ def cc_profile_plot(
     :param cast_ids: restrict to these casts (default: all in ``scans`` — one
         trace per cast × direction, thin, so a whole cruise reads as an envelope)
     :param flags: rows with ``scan_id`` (e.g. from :func:`cc_qc_spike` or
-        :func:`cc_flags`) drawn as red × markers on top
+        :func:`cc_flags`) drawn as violet × markers on top
     """
     px = _px()
     d = scans.dropna(subset=[column]).copy()
@@ -448,7 +448,7 @@ def cc_profile_plot(
     if flags is not None and len(flags):
         f = d[d.scan_id.isin(set(flags.scan_id))]
         fig.add_scatter(x=f[column], y=f.depth, mode="markers", name="flagged",
-                        marker=dict(symbol="x", size=9, color="crimson"))
+                        marker=dict(symbol="x", size=9, color="#9467bd"))
     fig.update_yaxes(autorange="reversed")
     return fig
 
@@ -524,7 +524,7 @@ def cc_profile_explorer(
                 fig.add_scatter(
                     x=f[column], y=f.depth, mode="markers", name=f"flagged {int(seq)}",
                     showlegend=False,
-                    marker=dict(symbol="x", size=9, color="crimson"),
+                    marker=dict(symbol="x", size=9, color="#9467bd"),
                     hovertemplate=f"FLAG cast {int(seq)} · depth %{{y:.1f}} m · %{{x:.3f}}<extra></extra>")
                 groups.append(int(seq))
 
