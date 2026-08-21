@@ -31,18 +31,37 @@ wrong server.
    of the four disagree. The site header shows the installed version automatically
    (`hooks/version.py` reads the *installed* metadata — `pip install -e .` again after a
    bump or it keeps showing the old one); nothing else is hand-maintained.
-2. Push to `main` → `.github/workflows/docs.yml` redeploys the docs; `test.yml` runs. Then
+2. **Re-render the articles through the tunnel, every bump:**
+   `PYTHON=.venv/bin/python scripts/render_articles.sh`. It executes `articles/*.qmd` against
+   the live database — `cc_pg_connect(tunnel=True)` opens `ssh -N calcofi` itself (your
+   `~/.ssh/config` alias) and libpq takes the password from `~/.pgpass`
+   (`localhost:5432:calcofi:<role>:<password>`, mode 600; `fe_sendauth: no password supplied`
+   means that file is missing) — so the version each article prints is the one being
+   released. Commit `docs/articles/*.ipynb` together with the bump. If it fails part-way,
+   `git checkout -- docs/articles`: jupytext overwrites the committed notebook before
+   nbconvert executes it. Articles are read-only against the database (no
+   `cc_propose_flags()`, no `write_table=`).
+3. Push to `main` → `.github/workflows/docs.yml` redeploys the docs; `test.yml` runs. Then
    **tag it**: `git tag -a vX.Y.Z -m "calcofi4py X.Y.Z — …" && git push origin vX.Y.Z` — users pin
    with `@vX.Y.Z`, and `scripts/deploy_server.sh vX.Y.Z` takes a tag. (Tags start at v0.3.5;
    earlier versions are reachable only by commit SHA.)
-3. **Always upgrade the server: `scripts/deploy_server.sh`.** The CTD team runs the examples
-   in RStudio's Python console on rstudio.calcofi.io, whose reticulate interpreter is the
-   rstudio container's `/opt/venv`. That copy is baked into the image only at build time
-   (`CalCOFI/server` `rstudio/Dockerfile`), so after a bump it is stale until this script
-   runs. It bit us on 2026-08-21: the README example called `cc_withdraw_flags()`, the
-   server had the previous version, the flag was proposed and the undo threw.
-4. Tell whoever is mid-session to *Session → Restart R*: reticulate embeds Python once per
+4. **Deploy to the server, every time: `scripts/deploy_server.sh vX.Y.Z`.** Not optional,
+   not "only if code changed", and not something to ask about or leave as a follow-up — a
+   bump is not finished until the script has printed `server calcofi4py X.Y.Z`. The CTD
+   team runs the examples in RStudio's Python console on rstudio.calcofi.io, whose
+   reticulate interpreter is the rstudio container's `/opt/venv`. That copy is baked into
+   the image only at build time (`CalCOFI/server` `rstudio/Dockerfile`), so after a bump it
+   is stale until this script runs, and the `cc.__version__` the examples quote is wrong
+   there. It bit us on 2026-08-21: the README example called `cc_withdraw_flags()`, the
+   server had the previous version, the flag was proposed and the undo threw. Docs-only
+   bumps deploy too — the version the site quotes and the version on the server must agree.
+5. Tell whoever is mid-session to *Session → Restart R*: reticulate embeds Python once per
    R session, so `exit` + re-`import` still returns the already-loaded module.
+
+**Run the whole checklist yourself, without asking.** `.claude/settings.json` allowlists every
+command in it (`scripts/deploy_server.sh`, `scripts/render_articles.sh`, `ssh calcofi`, git
+add/commit/tag/push, pytest, `mkdocs build`, `pip install -e`) so nothing prompts; when a script
+or command is added to the flow, add its rule there in the same change.
 
 **Upgrading a git install**: `pip install 'calcofi4py[viz]'` on an existing install is a no-op
 ("Requirement already satisfied" — not on PyPI). Re-running the git URL with `--upgrade` is what
