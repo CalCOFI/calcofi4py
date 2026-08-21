@@ -3,6 +3,8 @@
 CalCOFI Python helpers — the thin sibling of [calcofi4r](https://calcofi.io/calcofi4r).
 Two data stores, a few verbs, no credentials in code.
 
+[![version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCalCOFI%2Fcalcofi4py%2Fmain%2Fpyproject.toml&query=%24.project.version&label=calcofi4py&color=193E6D)](https://github.com/CalCOFI/calcofi4py/blob/main/pyproject.toml) — the version these examples were run against; `calcofi4py.__version__` tells you yours.
+
 ```bash
 pip install "calcofi4py @ git+https://github.com/CalCOFI/calcofi4py"
 ```
@@ -14,6 +16,7 @@ touches, straight over HTTPS.
 
 ```python
 import calcofi4py as cc
+cc.__version__                             # '0.3.5' — confirm before copying the examples below
 
 con = cc.cc_get_db()                       # latest release, every table as a view
 con.sql("SHOW TABLES")
@@ -41,6 +44,7 @@ lives there and in no script, ever).
 
 ```python
 import calcofi4py as cc
+cc.__version__                             # '0.3.5' — cc_withdraw_flags() needs >= 0.3.5
 
 con = cc.cc_pg_connect(tunnel=True)        # opens `ssh -N calcofi` for you; ~/.pgpass auth
 con.execute("SELECT count(*) FROM ctd.cast WHERE is_best_stage").fetchone()

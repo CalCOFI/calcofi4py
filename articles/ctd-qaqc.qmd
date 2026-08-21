@@ -30,6 +30,8 @@ import pandas as pd
 import calcofi4py as cc
 from IPython.display import HTML, display
 
+print("calcofi4py", cc.__version__)     # the version every output below was produced with
+
 pd.options.display.max_rows = 10
 pd.options.display.width = 120
 

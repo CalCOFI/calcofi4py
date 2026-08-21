@@ -24,7 +24,10 @@ wrong server.
 
 ## Releasing — the server copy is part of the release
 
-1. Bump the version in **both** `pyproject.toml` and `src/calcofi4py/__init__.py`.
+1. Bump the version in `pyproject.toml`, `src/calcofi4py/__init__.py`, **and the
+   `cc.__version__  # '<ver>'` lines that open the README / docs examples** —
+   `tests/test_docs.py` fails if any of the three disagree. The site header shows the
+   installed version automatically (`hooks/version.py`); nothing else is hand-maintained.
 2. Push to `main` → `.github/workflows/docs.yml` redeploys the docs; `test.yml` runs.
 3. **Always upgrade the server: `scripts/deploy_server.sh`.** The CTD team runs the examples
    in RStudio's Python console on rstudio.calcofi.io, whose reticulate interpreter is the

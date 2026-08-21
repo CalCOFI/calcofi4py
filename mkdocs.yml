@@ -9,6 +9,10 @@ repo_url: https://github.com/CalCOFI/calcofi4py
 repo_name: CalCOFI/calcofi4py
 edit_uri: edit/main/docs/
 
+# stamps the installed package version into the header/titles and {{ calcofi4py_version }}
+hooks:
+  - hooks/version.py
+
 theme:
   name: material
   logo: assets/logo.svg
