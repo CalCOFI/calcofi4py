@@ -28,7 +28,10 @@ wrong server.
    `cc.__version__  # '<ver>'` lines that open the README / docs examples** —
    `tests/test_docs.py` fails if any of the three disagree. The site header shows the
    installed version automatically (`hooks/version.py`); nothing else is hand-maintained.
-2. Push to `main` → `.github/workflows/docs.yml` redeploys the docs; `test.yml` runs.
+2. Push to `main` → `.github/workflows/docs.yml` redeploys the docs; `test.yml` runs. Then
+   **tag it**: `git tag -a vX.Y.Z -m "calcofi4py X.Y.Z — …" && git push origin vX.Y.Z` — users pin
+   with `@vX.Y.Z`, and `scripts/deploy_server.sh vX.Y.Z` takes a tag. (Tags start at v0.3.5;
+   earlier versions are reachable only by commit SHA.)
 3. **Always upgrade the server: `scripts/deploy_server.sh`.** The CTD team runs the examples
    in RStudio's Python console on rstudio.calcofi.io, whose reticulate interpreter is the
    rstudio container's `/opt/venv`. That copy is baked into the image only at build time
@@ -37,6 +40,10 @@ wrong server.
    server had the previous version, the flag was proposed and the undo threw.
 4. Tell whoever is mid-session to *Session → Restart R*: reticulate embeds Python once per
    R session, so `exit` + re-`import` still returns the already-loaded module.
+
+**Upgrading a git install**: `pip install 'calcofi4py[viz]'` on an existing install is a no-op
+("Requirement already satisfied" — not on PyPI). Re-running the git URL with `--upgrade` is what
+moves people forward; verified 0.3.4 → 0.3.5 in a scratch venv on 2026-08-21.
 
 ## Secrets and the database — rules that are not negotiable
 

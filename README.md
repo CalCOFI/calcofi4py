@@ -14,6 +14,19 @@ DataFrames; the maps and profiles are plotly). Without it you get release access
 (DuckDB). The extras go *inside* the quotes with the git URL — a bare
 `pip install 'calcofi4py[viz]'` only works after the package is already installed.
 
+**Updating and pinning.** The package is not on PyPI, so `pip install 'calcofi4py[viz]'`
+on an existing install just reports *Requirement already satisfied* and changes nothing.
+Re-run the git URL — with `--upgrade` — to move to the latest `main`, or pin a release tag:
+
+```bash
+pip install --upgrade "calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py"           # latest main
+pip install --upgrade "calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py@v0.3.5"    # a release tag
+python -c "import calcofi4py as cc; print(cc.__version__)"                                    # confirm
+```
+
+In RStudio's Python console (rstudio.calcofi.io) the interpreter is embedded once per R
+session: after an upgrade do *Session → Restart R*, or `import` keeps returning the old module.
+
 ## The public database releases (no account needed)
 
 Immutable, versioned Parquet on a public bucket; DuckDB reads only what a query
