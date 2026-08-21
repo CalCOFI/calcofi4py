@@ -6,8 +6,13 @@ Two data stores, a few verbs, no credentials in code.
 [![version](https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCalCOFI%2Fcalcofi4py%2Fmain%2Fpyproject.toml&query=%24.project.version&label=calcofi4py&color=193E6D)](https://github.com/CalCOFI/calcofi4py/blob/main/pyproject.toml) — the version these examples were run against; `calcofi4py.__version__` tells you yours.
 
 ```bash
-pip install "calcofi4py @ git+https://github.com/CalCOFI/calcofi4py"
+pip install "calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py"
 ```
+
+`[viz]` adds pandas + plotly, which every example below uses (the CTD helpers return
+DataFrames; the maps and profiles are plotly). Without it you get release access only
+(DuckDB). The extras go *inside* the quotes with the git URL — a bare
+`pip install 'calcofi4py[viz]'` only works after the package is already installed.
 
 ## The public database releases (no account needed)
 
