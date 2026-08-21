@@ -73,14 +73,55 @@ cc.cc_pg_tunnel_close()
 
 ### Both at once — release Parquet ⋈ PostgreSQL in one DuckDB query
 
+The two stores answer different questions. The **public release** is what everyone
+sees: immutable, versioned Parquet with every CalCOFI dataset integrated on shared
+keys. The **PostgreSQL database** is the CTD team's working state: the raw cast
+archive and the flag ledger, changing daily as people propose and review. They share
+`cruise_key` (`YYYY-MM-NODC`, e.g. `2026-07-3322`), so a question that spans them —
+*which cruises are we still flagging, and what does the public release already
+publish for those cruises?* — is one join away.
+
+DuckDB is the bridge. `cc_get_db()` registers the release tables as views over the
+Parquet (called by their bare names: `sample`, `cruise`, …); `cc_pg_attach()` then
+ATTACHes PostgreSQL as a second catalog named `pg` (DuckDB's `postgres` extension
+talks libpq through your SSH tunnel and reads `~/.pgpass`; read-only by default), so
+its tables are `pg.<schema>.<table>`. From there it is ordinary SQL — DuckDB plans
+across both sources and hands back one DataFrame.
+
 ```python
-con = cc.cc_get_db(tables=["cruise", "sample"])
-cc.cc_pg_attach(con)                       # ATTACH ... AS pg (through your tunnel)
-con.sql("""
-  SELECT f.study, f.cruise_key, count(*) AS flags
-  FROM pg.ctd.flag f GROUP BY 1, 2 ORDER BY 3 DESC LIMIT 10
-""")
+import calcofi4py as cc
+
+cc.cc_pg_tunnel()                                 # SSH tunnel up (cc_pg_connect(tunnel=True) does the same)
+con = cc.cc_get_db(tables=["sample", "cruise"])   # DuckDB with the release tables as views
+cc.cc_pg_attach(con)                              # + PostgreSQL attached as catalog `pg` (pg.ctd.*, pg.work.*)
+con.sql("SHOW ALL TABLES")                        # both catalogs, side by side
+
+qc_vs_release = con.sql("""
+  WITH qc AS (                                    -- PostgreSQL side: the team's working state
+    SELECT fi.cruise_key, fi.study,
+           count(*) FILTER (WHERE f.status = 'proposed') AS flags_proposed,
+           count(*) FILTER (WHERE f.status = 'accepted') AS flags_accepted
+    FROM pg.ctd.flag f
+    JOIN pg.ctd.file fi USING (file_id)           -- a flag sits on a scan/file; the file knows its cruise
+    GROUP BY 1, 2)
+  SELECT qc.study, qc.cruise_key, qc.flags_proposed, qc.flags_accepted,
+         count(s.sample_key) AS casts_in_release  -- release side: what the public sees today
+  FROM qc
+  LEFT JOIN sample s                              -- `sample` = the release view (no prefix)
+         ON s.cruise_key = qc.cruise_key AND s.dataset_key = 'calcofi_ctd-cast'
+  GROUP BY ALL
+  ORDER BY qc.cruise_key DESC
+""").df()
+#  study   cruise_key  flags_proposed  flags_accepted  casts_in_release
+# 2607SH 2026-07-3322             574               0               122    <- being cleaned; already public
+# 2304SH 2023-04-3322               0               0               226    <- its 3 flags were withdrawn
+
+cc.cc_pg_tunnel_close()
 ```
+
+Writes go the other way too: `cc_pg_attach(con, read_only=False)` lets a
+`CREATE TABLE pg.work.my_subset AS SELECT … FROM sample WHERE …` land release rows in
+your PostgreSQL schema for the team to work on.
 
 ## Conventions inherited from calcofi4r (do not drift)
 
