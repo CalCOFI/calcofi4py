@@ -24,10 +24,13 @@ wrong server.
 
 ## Releasing — the server copy is part of the release
 
-1. Bump the version in `pyproject.toml`, `src/calcofi4py/__init__.py`, **and the
-   `cc.__version__  # '<ver>'` lines that open the README / docs examples** —
-   `tests/test_docs.py` fails if any of the three disagree. The site header shows the
-   installed version automatically (`hooks/version.py`); nothing else is hand-maintained.
+1. Bump the version in `pyproject.toml`, `src/calcofi4py/__init__.py`, **the
+   `cc.__version__  # '<ver>'` lines that open the README / docs examples, and
+   `CHANGELOG.md`** — a new `## X.Y.Z (YYYY-MM-DD)` section at the top, today's date, one
+   bullet per user-facing change (see *Changelog* below). `tests/test_docs.py` fails if any
+   of the four disagree. The site header shows the installed version automatically
+   (`hooks/version.py` reads the *installed* metadata — `pip install -e .` again after a
+   bump or it keeps showing the old one); nothing else is hand-maintained.
 2. Push to `main` → `.github/workflows/docs.yml` redeploys the docs; `test.yml` runs. Then
    **tag it**: `git tag -a vX.Y.Z -m "calcofi4py X.Y.Z — …" && git push origin vX.Y.Z` — users pin
    with `@vX.Y.Z`, and `scripts/deploy_server.sh vX.Y.Z` takes a tag. (Tags start at v0.3.5;
@@ -44,6 +47,25 @@ wrong server.
 **Upgrading a git install**: `pip install 'calcofi4py[viz]'` on an existing install is a no-op
 ("Requirement already satisfied" — not on PyPI). Re-running the git URL with `--upgrade` is what
 moves people forward; verified 0.3.4 → 0.3.5 in a scratch venv on 2026-08-21.
+
+## Changelog (CHANGELOG.md is not optional) — the NEWS.md of this package
+
+- **Every user-facing change bumps the version and gets a bullet in `CHANGELOG.md`, in
+  the same commit**: new, changed or removed functions, arguments, defaults, behavior, bug
+  fixes, and docs a user reads (articles, README examples). Patch for fixes/docs, minor
+  for new functions. Internal churn stays out. Say what changed *for the user* and, when
+  it is not obvious, why (the R `NEWS.md` voice — short narrative, not a commit-subject
+  dump).
+- **Headings are `## <version> (<YYYY-MM-DD>)`, newest first — the date is never omitted.**
+  It is the day the version is committed. **There is no "Unreleased" section**: if it is
+  on `main`, it has a version and a date (several commits may keep adding bullets under
+  the same version until it is tagged). `tests/test_docs.py` fails if the newest heading
+  is not `calcofi4py.__version__`, a heading lacks a date, or entries are out of order.
+- The site publishes the root file as https://calcofi.io/calcofi4py/changelog/ through
+  `hooks/changelog.py` — never copy it into `docs/`.
+- Reconstructing a gap retroactively: `git log --format='%h %ad %s' --date=short -G '^version'
+  -- pyproject.toml` lists the bump commits with their dates; summarize the commits between
+  each pair (`git diff <prev>..<bump> -- src`) and keep the dates from git.
 
 ## Secrets and the database — rules that are not negotiable
 

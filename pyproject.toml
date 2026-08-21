@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "calcofi4py"
-version = "0.3.5"
+version = "0.3.6"
 description = "CalCOFI Python helpers: query the public database releases (DuckDB over Parquet) and the CTD team's PostgreSQL working database"
 readme = "README.md"
 license = "MIT"

@@ -20,7 +20,7 @@ Re-run the git URL — with `--upgrade` — to move to the latest `main`, or pin
 
 ```bash
 pip install --upgrade "calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py"           # latest main
-pip install --upgrade "calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py@v0.3.5"    # a release tag
+pip install --upgrade "calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py@v0.3.6"    # a release tag
 python -c "import calcofi4py as cc; print(cc.__version__)"                                    # confirm
 ```
 
@@ -34,7 +34,7 @@ touches, straight over HTTPS.
 
 ```python
 import calcofi4py as cc
-cc.__version__                             # '0.3.5' — confirm before copying the examples below
+cc.__version__                             # '0.3.6' — confirm before copying the examples below
 
 con = cc.cc_get_db()                       # latest release, every table as a view
 con.sql("SHOW TABLES")
@@ -62,7 +62,7 @@ lives there and in no script, ever).
 
 ```python
 import calcofi4py as cc
-cc.__version__                             # '0.3.5' — cc_withdraw_flags() needs >= 0.3.5
+cc.__version__                             # '0.3.6' — cc_withdraw_flags() needs >= 0.3.5
 
 con = cc.cc_pg_connect(tunnel=True)        # opens `ssh -N calcofi` for you; ~/.pgpass auth
 con.execute("SELECT count(*) FROM ctd.cast WHERE is_best_stage").fetchone()

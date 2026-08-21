@@ -12,6 +12,8 @@ edit_uri: edit/main/docs/
 # stamps the installed package version into the header/titles and {{ calcofi4py_version }}
 hooks:
   - hooks/version.py
+  # publishes the repo-root CHANGELOG.md as the Changelog page (no copy in docs/)
+  - hooks/changelog.py
 
 theme:
   name: material
@@ -37,6 +39,7 @@ nav:
   - Articles:
       - CTD QA/QC walkthrough: articles/ctd-qaqc.ipynb
   - API reference: reference.md
+  - Changelog: changelog.md
 
 plugins:
   - search
