@@ -86,6 +86,23 @@ moves people forward; verified 0.3.4 → 0.3.5 in a scratch venv on 2026-08-21.
   -- pyproject.toml` lists the bump commits with their dates; summarize the commits between
   each pair (`git diff <prev>..<bump> -- src`) and keep the dates from git.
 
+## Session notes (`.claude/calcofi4py_notes.md` is not optional either)
+
+- **Every session ends with an entry in `.claude/calcofi4py_notes.md`** — the changelog of the
+  *work*, where `CHANGELOG.md` is the changelog of the *package*. One
+  `## YYYY-MM-DD — <summary title>` section per day — the title is a few words on what the
+  day was about (e.g. `## 2026-08-21 — changelog, 0.3.6 release, unattended release flow`) —
+  **newest first** (same shape as `CHANGELOG.md`); a session on a day that already has a
+  section extends that section (and its title, if the scope grew) rather than adding a new one.
+- Under the date: one `### N. "<prompt>"` per user prompt, quoted as written, with mid-turn
+  messages listed beneath the prompt they interrupted; then a **Response** paragraph saying
+  what was done and why, naming commits, tags, versions, scripts run, tests/builds and their
+  results, what failed and how it was resolved (or why it was left), and anything handed back
+  to the user. Close the day with a *Gotchas learned* list when something cost time.
+- Write it before the session's last commit and commit it with that push, so the notes and
+  the code travel together. Never a password, a `~/.pgpass` line, a token, or a server
+  hostname that is not already in the README.
+
 ## Secrets and the database — rules that are not negotiable
 
 - **No secret in code, tests, docs, notebooks, or CI.** Passwords live in libpq's
