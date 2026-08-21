@@ -1,6 +1,8 @@
 __pycache__/
-*.egg-info/
-dist/
+.cache/
 .pytest_cache/
 .venv/
+*.egg-info/
+articles/*.ipynb
+dist/
 site/

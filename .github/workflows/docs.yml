@@ -13,5 +13,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
-      - run: pip install -e . mkdocs-material "mkdocstrings[python]"
+      # articles under docs/articles/ are pre-rendered notebooks (scripts/render_articles.sh);
+      # mkdocs-jupyter publishes their stored outputs — no database credentials here, by design
+      - run: pip install -e ".[docs]"
       - run: mkdocs gh-deploy --force --no-history

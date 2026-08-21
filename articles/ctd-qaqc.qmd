@@ -1,0 +1,232 @@
+# CTD QA/QC, end to end — a read-only walkthrough
+
+This article strings the `calcofi4py` helpers together the way the CTD team's
+parameterized notebook
+([`clean_ctd_cruise-var.qmd`](https://calcofi.io/workflows/clean_ctd_cruise-var.html))
+does — one cruise, one variable, from raw casts to a clean 1 m product — **without
+writing anything**. The two steps that change the database (proposing flags, publishing
+a `work.*` table) are shown as code but not run; everything else executes for real.
+
+```{python}
+#| echo: false
+from IPython.display import Image
+Image("../assets/ctd-qaqc-flow.png", width=520)   # the loop this article walks (rendered from the repo)
+```
+
+*The loop this article walks: originals are loaded once and never edited; rules propose,
+curators decide, products are derived.*
+
+**How this page is built.** It is the Python equivalent of a *pre-computed R vignette*:
+someone with a [server account](https://calcofi.io/docs/server-access.html) runs
+`scripts/render_articles.sh`, which executes this notebook through *their* SSH tunnel
+and `~/.pgpass`, and commits the executed notebook (`docs/articles/*.ipynb`). GitHub
+Pages then publishes the stored outputs as-is — the site build holds **no database
+credentials** and never touches the server. No secret ever appears in the notebook:
+`cc_pg_connect()` reads the password from libpq's `~/.pgpass`, and the session-info
+block at the end records exactly what software and server the outputs came from.
+
+```{python}
+import pandas as pd
+import calcofi4py as cc
+from IPython.display import HTML, display
+
+pd.options.display.max_rows = 10
+pd.options.display.width = 120
+
+def show(fig):
+    """Plotly figure as self-contained HTML, so it renders in the static site."""
+    display(HTML(fig.to_html(include_plotlyjs="cdn", full_html=False)))
+
+study, variable, units, sensor_pair = "2607SH", "tempave", "degC", ("temp1", "temp2")
+```
+
+## 1. The public release — no account needed
+
+The other data store first, because anyone can run this part. Releases are immutable,
+versioned Parquet on a public bucket; DuckDB reads only what a query touches.
+
+```{python}
+versions = cc.cc_list_versions()
+print(f"{len(versions)} releases; latest = {cc.cc_resolve_version('latest')}")
+
+rel = cc.cc_get_db(tables=["sample", "cruise"])          # release tables as DuckDB views
+rel.execute("SET enable_progress_bar = false")            # no Jupyter progress-bar widgets in a static page
+rel.sql("""
+  SELECT dataset_key, count(*) AS samples, min(datetime) AS first, max(datetime) AS last
+  FROM sample WHERE dataset_key LIKE 'calcofi_%'
+  GROUP BY 1 ORDER BY 2 DESC
+""").df()
+```
+
+## 2. Connect to the team's PostgreSQL database
+
+`cc_pg_connect(tunnel=True)` opens `ssh -N calcofi` for you (your `~/.ssh/config` alias)
+and authenticates from `~/.pgpass`. Nothing here is a secret: the alias name, the
+database name, and the server version.
+
+```{python}
+con = cc.cc_pg_connect(tunnel=True)
+pg_version = con.execute("SHOW server_version").fetchone()[0]
+n_files, n_scans = con.execute(
+    "SELECT (SELECT count(*) FROM ctd.file), (SELECT count(*) FROM ctd.scan)").fetchone()
+print(f"PostgreSQL {pg_version}: {n_files:,} cast files, {n_scans:,} scans, all verbatim and immutable")
+```
+
+## 3. The cruise at a glance
+
+Every station occupation is a numbered `cast_seq` (from `cast_id`: `"2607_001d"` → 1)
+with a down- and an upcast at the same position. That number cross-references the map,
+the section, the triage table and the profiles.
+
+```{python}
+casts = cc.cc_ctd_casts(con, study)
+print(f"{study} (cruise_key {casts.cruise_key.iloc[0]}): {casts.cast_seq.nunique()} occupations, "
+      f"{len(casts)} casts, {casts.datetime_utc.min():%Y-%m-%d} → {casts.datetime_utc.max():%Y-%m-%d}, "
+      f"max depth {casts.depth_max.max():.0f} m, {casts.n_scans.sum():,} scans")
+casts.head(4)
+```
+
+```{python}
+show(cc.cc_station_map(casts, title=f"{study} — station occupations by cast_seq"))
+```
+
+`cc_ctd_scans()` reads from `ctd.v_scan_qc`, so each measurement column arrives with its
+accepted QC flag (`*_qc`) and accepted correction (`*_fix`) — empty until curators accept
+something, by construction.
+
+```{python}
+scans = cc.cc_ctd_scans(con, study, columns=[variable, *sensor_pair])
+print(f"{len(scans):,} scans × {scans.shape[1]} columns; QC companions: "
+      f"{[c for c in scans.columns if c.endswith(('_qc', '_fix'))]}")
+show(cc.cc_section_plot(scans, casts, variable, units=units, title=f"{study} — {variable} section"))
+```
+
+## 4. Run the portable QC rules
+
+Each rule returns *evidence* — a DataFrame of suspect scans — and changes nothing.
+They are the same SQL the [ctd-qaqc app](https://app.calcofi.io/ctd-qaqc/) runs
+([`metadata/qc_rules/`](https://github.com/CalCOFI/workflows/tree/main/metadata/qc_rules)).
+
+```{python}
+spikes = cc.cc_qc_spike(con, study, variable, spike_threshold=0.5, neighbour_tol=0.5)
+pair   = cc.cc_qc_sensor_pair(con, study, *sensor_pair, threshold=0.05)
+oob    = cc.cc_qc_range(con, study, variable, valid_min=-3, valid_max=40)
+print(f"spikes: {len(spikes)} on {spikes.cast_id.nunique()} casts "
+      f"({(spikes.cast_dir == 'U').mean():.0%} on upcasts)\n"
+      f"sensor pair |{sensor_pair[0]} - {sensor_pair[1]}| > 0.05: {len(pair)} scans\n"
+      f"outside [-3, 40] {units}: {len(oob)} values")
+spikes.sort_values("excursion", ascending=False).head(5)
+```
+
+## 5. Triage — which casts most need a human
+
+```{python}
+candidates = pd.concat([
+    spikes[["scan_id", "depth"]].assign(rule_key="ctd_spike_v1"),
+    oob[["scan_id", "depth"]].assign(rule_key="ctd_value_out_of_range_v1"),
+]).assign(flag_id=lambda d: range(len(d)))
+triage = cc.cc_flag_summary(candidates, scans, variable)
+worst = int(triage.cast_seq.iloc[0])
+triage.head(8)
+```
+
+```{python}
+show(cc.cc_profile_explorer(scans, variable, flags=candidates, units=units, default=worst,
+                            title=f"{study} — {variable} profiles (dropdown: any cast_seq)"))
+```
+
+## 6. The ledger as it stands (read)
+
+`cc_flags()` is the flag ledger joined to its scans — who proposed what, and its fate.
+Reading it is free; only the curators' `accepted` verdicts affect any product.
+
+```{python}
+ledger = cc.cc_flags(con, study=study)
+print(ledger.status.value_counts().to_dict())
+ledger[["flag_id", "cast_id", "depth", "variable", "qual_label", "rule_key", "status", "created_by"]].tail(5)
+```
+
+## 7. What proposing looks like — *shown, not run*
+
+This is the one step that writes. It is idempotent (a scan already carrying a proposed
+or accepted flag for the variable is skipped), it records your username, and it is
+reversible by you while still `proposed`:
+
+```python
+n = cc.cc_propose_flags(con, spikes.scan_id, variable, qual_code=4,
+                        reason=f"single-scan spike > 0.5 {units}, neighbours agree within 0.5",
+                        rule_key="ctd_spike_v1")
+
+mine = cc.cc_flags(con, study, status="proposed").query("created_by == @user")
+cc.cc_withdraw_flags(con, mine.flag_id, note="second thoughts")   # undo: withdrawn, still audited
+```
+
+Curators accept or reject with one `UPDATE` (pgAdmin, psql, R or Python); everyone else
+gets a clean permission error — see the
+[notebook](https://calcofi.io/workflows/clean_ctd_cruise-var.html#propose-flags-into-the-ledger).
+
+## 8. Derive the clean 1 m bins — computed, not published
+
+`cc_bin_1m()` bins `ctd.v_scan_clean` — originals with accepted fixes substituted and
+accepted-bad values NULLed. Without `write_table=` it is a pure computation that returns
+a DataFrame; with it, the same result lands as a shared table in the `work` schema.
+
+```{python}
+import plotly.graph_objects as go
+
+bins = cc.cc_bin_1m(con, study, variable, cast_dir="D")       # no write_table -> nothing written
+print(f"{len(bins):,} (cast × 1 m) bins")
+
+w   = scans.query("cast_seq == @worst and cast_dir == 'D'").cast_id.iloc[0]
+raw = scans.query("cast_id == @w").dropna(subset=[variable])
+bw  = bins.query("cast_id == @w")
+fig = go.Figure()
+fig.add_scatter(x=raw[variable], y=raw.depth, mode="markers", name="raw scans",
+                marker=dict(size=3, color="lightgrey"))
+fig.add_scatter(x=bw.value, y=bw.depth_m, mode="lines", name="clean 1 m bins",
+                line=dict(color="#1f77b4", width=2))
+fig.update_layout(height=520, title=f"{study} cast {worst} — raw vs clean 1 m {variable}",
+                  xaxis_title=f"{variable} ({units})", yaxis_title="depth (m)")
+fig.update_yaxes(autorange="reversed")
+show(fig)
+```
+
+Until curators accept flags the two coincide; each acceptance moves only the blue line.
+
+## 9. Both stores in one query
+
+The release is what the public sees; PostgreSQL is the work in progress. They share
+`cruise_key`, and DuckDB can read both at once — `cc_pg_attach()` attaches PostgreSQL
+(read-only by default) as catalog `pg` next to the release views.
+
+```{python}
+cc.cc_pg_attach(rel)
+rel.sql("""
+  WITH qc AS (                                    -- PostgreSQL: flags per cruise
+    SELECT fi.cruise_key, fi.study,
+           count(*) FILTER (WHERE f.status = 'proposed') AS flags_proposed,
+           count(*) FILTER (WHERE f.status = 'accepted') AS flags_accepted
+    FROM pg.ctd.flag f JOIN pg.ctd.file fi USING (file_id)
+    GROUP BY 1, 2)
+  SELECT qc.study, qc.cruise_key, qc.flags_proposed, qc.flags_accepted,
+         count(s.sample_key) AS casts_in_release  -- release: what is public today
+  FROM qc LEFT JOIN sample s
+    ON s.cruise_key = qc.cruise_key AND s.dataset_key = 'calcofi_ctd-cast'
+  GROUP BY ALL ORDER BY qc.cruise_key DESC
+""").df()
+```
+
+```{python}
+con.close()
+cc.cc_pg_tunnel_close()
+```
+
+## Session info
+
+The provenance of every output above — package versions and the server they came from.
+
+```{python}
+print(cc.cc_session_info(extra={"postgresql": pg_version,
+                                "database": "calcofi @ ssh.calcofi.io (schema ctd)",
+                                "release": cc.cc_resolve_version("latest")}))
+```

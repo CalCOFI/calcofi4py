@@ -30,10 +30,21 @@ theme:
 
 nav:
   - Home: index.md
+  - Articles:
+      - CTD QA/QC walkthrough: articles/ctd-qaqc.ipynb
   - API reference: reference.md
 
 plugins:
   - search
+  # articles = pre-rendered notebooks (the R "precomputed vignette"): scripts/render_articles.sh
+  # executes articles/*.qmd locally through the author's tunnel + ~/.pgpass and commits the
+  # executed .ipynb; the site build only publishes stored outputs, so CI holds no credentials.
+  - mkdocs-jupyter:
+      execute: false
+      include_source: true
+      theme: dark
+      remove_tag_config:
+        remove_input_tags: [hide-input]
   - mkdocstrings:
       handlers:
         python:

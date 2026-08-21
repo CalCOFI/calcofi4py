@@ -26,7 +26,8 @@ dependencies = [
 [project.optional-dependencies]
 pandas = ["pandas>=2.0"]
 viz = ["pandas>=2.0", "plotly>=5.24"]
-dev = ["pytest>=8", "pandas>=2.0", "plotly>=5.24"]
+dev = ["pytest>=8", "pandas>=2.0", "plotly>=5.24", "jupytext", "nbconvert", "ipykernel"]
+docs = ["mkdocs-material", "mkdocstrings[python]", "mkdocs-jupyter"]
 
 [project.urls]
 Homepage = "https://github.com/CalCOFI/calcofi4py"

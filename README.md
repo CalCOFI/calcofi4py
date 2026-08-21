@@ -123,6 +123,14 @@ Writes go the other way too: `cc_pg_attach(con, read_only=False)` lets a
 `CREATE TABLE pg.work.my_subset AS SELECT … FROM sample WHERE …` land release rows in
 your PostgreSQL schema for the team to work on.
 
+## Walkthrough
+
+[CTD QA/QC, end to end](https://calcofi.io/calcofi4py/articles/ctd-qaqc/) — the
+helpers working together on one cruise × one variable, read-only: casts → map → QC rules
+→ triage → ledger → clean 1 m bins → a cross-store query, ending with the session info
+that makes the page a reproducible record. Pre-rendered by someone with an account
+(`scripts/render_articles.sh`); the site build holds no credentials.
+
 ## Conventions inherited from calcofi4r (do not drift)
 
 - Secrets only in `~/.pgpass` / `%APPDATA%\postgresql\pgpass.conf`; never a
