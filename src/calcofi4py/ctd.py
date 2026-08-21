@@ -296,6 +296,37 @@ def cc_flags(con, study: str | None = None, status: str | None = None) -> "pd.Da
         """, params)
 
 
+
+def cc_withdraw_flags(con, flag_ids: Iterable[int], note: str | None = None,
+                      commit: bool = True) -> int:
+    """Undo: withdraw your own *proposed* flags (the ledger is append-only).
+
+    ``ctd.flag`` rows are never deleted — a withdrawn proposal stays in the
+    ledger and in ``ctd.flag_audit``, so the history of who proposed what and
+    took it back is preserved. Only the proposer (or a curator) may withdraw,
+    and only while the flag is still ``proposed``; an accepted or rejected
+    flag is a curator decision and is left untouched (it is not counted in the
+    return value). Before ``commit()`` you can always ``con.rollback()`` instead.
+
+    :param flag_ids: from ``INSERT … RETURNING flag_id`` or :func:`cc_flags`
+    :param note: optional reason, recorded in ``review_note``
+    :return: number of flags actually withdrawn
+    """
+    ids = [int(i) for i in flag_ids]
+    if not ids:
+        return 0
+    cur = con.execute("""
+        UPDATE ctd.flag
+        SET status = 'withdrawn', review_note = COALESCE(%(note)s, review_note)
+        WHERE flag_id = ANY(%(ids)s) AND status = 'proposed'
+          AND (created_by = current_user
+               OR pg_has_role(current_user, 'calcofi_curator', 'MEMBER'))
+        """, {"ids": ids, "note": note})
+    n = cur.rowcount
+    if commit:
+        con.commit()
+    return n
+
 # ── derived products ─────────────────────────────────────────────────────────
 
 def cc_bin_1m(

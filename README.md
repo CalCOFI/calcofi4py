@@ -45,16 +45,29 @@ import calcofi4py as cc
 con = cc.cc_pg_connect(tunnel=True)        # opens `ssh -N calcofi` for you; ~/.pgpass auth
 con.execute("SELECT count(*) FROM ctd.cast WHERE is_best_stage").fetchone()
 
-import pandas as pd
-casts = pd.read_sql("SELECT * FROM ctd.v_scan_qc WHERE study = '2304SH' AND cast_id = '2304_020d'", con)
+casts = cc.cc_ctd_casts(con, "2304SH")                                  # one row per cast (best stage)
+scans = cc.cc_ctd_scans(con, "2304SH", cast_id="2304_001d",
+                        columns=["temp1", "temp2"])                     # this cast: 40 scans, 3–42 m, 1 m bins
 
-# propose a QC flag (curators accept/reject in pgAdmin or SQL)
-con.execute("""
+# propose a QC flag — look first, write second, and you can still undo
+where, args = "study = %s AND cast_id = %s AND depth = %s", ("2304SH", "2304_001d", 20)
+
+hit = con.execute(f"SELECT scan_id, depth, temp1, temp2 FROM ctd.v_scan_best WHERE {where}", args).fetchall()
+assert len(hit) == 1, hit             # [] = your WHERE matches nothing, and the INSERT below would flag nothing, silently
+
+(flag_id,) = con.execute(f"""
   INSERT INTO ctd.flag (scan_id, variable, qual_code, reason)
-  SELECT scan_id, 'temp1', 4, 'spike vs neighbours'
-  FROM ctd.v_scan_best WHERE study=%s AND cast_id=%s AND depth=%s
-""", ("2304SH", "2304_001d", 57))
-con.commit()
+  SELECT scan_id, 'temp1', 3, 'README example (withdrawn right after)'
+  FROM ctd.v_scan_best WHERE {where}
+  RETURNING flag_id
+""", args).fetchone()
+con.commit()                          # con.rollback() instead discards it before anyone sees it
+
+cc.cc_flags(con, "2304SH", status="proposed")     # the ledger: who proposed what, and its fate
+
+# undo: the ledger is append-only, so undo = withdraw your own proposal (the audit trail keeps it);
+# curators accept/reject everything else in pgAdmin or SQL
+cc.cc_withdraw_flags(con, [flag_id], note="README example")
 cc.cc_pg_tunnel_close()
 ```
 

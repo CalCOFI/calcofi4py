@@ -32,6 +32,7 @@ products, and plot — see the worked notebook
 ::: calcofi4py.ctd.cc_qc_range
 ::: calcofi4py.ctd.cc_propose_flags
 ::: calcofi4py.ctd.cc_flags
+::: calcofi4py.ctd.cc_withdraw_flags
 ::: calcofi4py.ctd.cc_bin_1m
 ::: calcofi4py.ctd.cc_station_map
 ::: calcofi4py.ctd.cc_profile_plot

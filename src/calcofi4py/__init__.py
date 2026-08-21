@@ -7,7 +7,7 @@ Two data stores, two verbs:
   ``cc_query(sql)`` for one-shots; ``cc_list_versions()`` / ``cc_catalog()``.
 - **CTD QA/QC** (schema ``ctd`` in PostgreSQL): ``cc_ctd_casts()`` / ``cc_ctd_scans()``,
   portable QC rules (``cc_qc_spike()``, ``cc_qc_sensor_pair()``, ``cc_qc_range()``),
-  the flag ledger (``cc_propose_flags()`` / ``cc_flags()``), clean products
+  the flag ledger (``cc_propose_flags()`` / ``cc_flags()`` / ``cc_withdraw_flags()``), clean products
   (``cc_bin_1m()``), and plotly viz (``cc_station_map()``, ``cc_profile_plot()``,
   ``cc_section_plot()``).
 - **The CTD team's PostgreSQL working database** (private, over SSH):
@@ -37,6 +37,7 @@ from .ctd import (
     cc_profile_explorer,
     cc_profile_plot,
     cc_propose_flags,
+    cc_withdraw_flags,
     cc_qc_range,
     cc_qc_sensor_pair,
     cc_qc_spike,
@@ -62,6 +63,7 @@ __all__ = [
     "cc_profile_explorer",
     "cc_profile_plot",
     "cc_propose_flags",
+    "cc_withdraw_flags",
     "cc_qc_range",
     "cc_qc_sensor_pair",
     "cc_qc_spike",
@@ -79,4 +81,4 @@ __all__ = [
     "cc_resolve_version",
     "cc_session_info",
 ]
-__version__ = "0.3.4"
+__version__ = "0.3.5"
