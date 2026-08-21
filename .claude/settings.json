@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(scripts/deploy_server.sh *)",
+      "Bash(scripts/render_articles.sh *)",
+      "Bash(PYTHON=.venv/bin/python scripts/render_articles.sh *)",
+      "Bash(ssh calcofi *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git tag *)",
+      "Bash(git push *)",
+      "Bash(pytest *)",
+      "Bash(.venv/bin/pytest *)",
+      "Bash(.venv/bin/python -m pytest *)",
+      "Bash(mkdocs build *)",
+      "Bash(.venv/bin/mkdocs build *)",
+      "Bash(pip install -e *)",
+      "Bash(.venv/bin/pip install -e *)"
+    ]
+  }
+}
+
