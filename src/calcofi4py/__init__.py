@@ -4,7 +4,8 @@ Two data stores, two verbs:
 
 - **Public releases** (immutable Parquet on GCS, no credentials):
   ``cc_get_db()`` -> DuckDB connection with every release table as a view;
-  ``cc_query(sql)`` for one-shots; ``cc_list_versions()`` / ``cc_catalog()``.
+  ``cc_query(sql)`` for one-shots; ``cc_list_versions()`` / ``cc_catalog()``;
+  ``qual_ok_sql()`` — the WHERE predicate that drops flagged (suspect/bad) values.
 - **CTD QA/QC** (schema ``ctd`` in PostgreSQL): ``cc_ctd_casts()`` / ``cc_ctd_scans()``,
   portable QC rules (``cc_qc_spike()``, ``cc_qc_sensor_pair()``, ``cc_qc_range()``),
   the flag ledger (``cc_propose_flags()`` / ``cc_flags()`` / ``cc_withdraw_flags()``), clean products
@@ -22,11 +23,13 @@ https://calcofi.io/docs/data-access.html
 
 from .session import cc_session_info
 from .release import (
+    QUAL_EXCLUDE,
     cc_catalog,
     cc_get_db,
     cc_list_versions,
     cc_query,
     cc_resolve_version,
+    qual_ok_sql,
 )
 from .ctd import (
     cc_bin_1m,
@@ -54,6 +57,7 @@ from .postgres import (
 )
 
 __all__ = [
+    "QUAL_EXCLUDE",
     "cc_bin_1m",
     "cc_catalog",
     "cc_ctd_casts",
@@ -80,5 +84,6 @@ __all__ = [
     "cc_query",
     "cc_resolve_version",
     "cc_session_info",
+    "qual_ok_sql",
 ]
-__version__ = "0.3.6"
+__version__ = "0.3.7"

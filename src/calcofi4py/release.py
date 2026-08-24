@@ -112,3 +112,37 @@ def cc_query(sql: str, version: str = "latest"):
     ``cc_query(...).df()`` for a pandas DataFrame, ``.fetchall()`` for tuples.
     """
     return cc_get_db(version).sql(sql)
+
+# quality flags -----------------------------------------------------------------
+# ``obs.measurement_qual`` carries each dataset's OWN vocabulary, uninterpreted:
+# bottle (6 = ok-from-CTD, 8 = suspect, 9 = missing), CTD cast files (1/2 = use
+# primary/secondary sensor, 8 = questionable, 9 = bad or missing), DIC WOCE
+# (2 = good, 3 = questionable, 4 = bad, 9 = missing). Nothing downstream applied
+# them — the station portal plotted a 1955 bottle oxygen flagged suspect since
+# 1955. Documented in CalCOFI/workflows ``metadata/measurement_qual.csv``.
+QUAL_EXCLUDE = {
+    "calcofi_bottle": ("8", "9"),
+    "calcofi_ctd-cast": ("8", "9"),
+    "calcofi_dic": ("3", "4", "9"),
+}
+
+
+def qual_ok_sql(alias: str | None = None) -> str:
+    """SQL predicate keeping rows whose ``measurement_qual`` is not suspect/bad/missing.
+
+    ``TRUE`` for unflagged rows (NULL), for datasets without a flag vocabulary and
+    for codes not in :data:`QUAL_EXCLUDE`; ``FALSE`` otherwise. Bottle codes were
+    written ``"8.0"`` through v2026.08.14, so a trailing ``.0`` is stripped first.
+    Append to any ``WHERE`` over ``obs``, ``obs_ctd_full``, ``sample_measurement``
+    or ``ctd_thin``. Mirrors ``calcofi4r::cc_qual_ok_sql()``.
+
+    >>> con.sql(f"SELECT * FROM obs o WHERE o.dataset_key = 'calcofi_bottle' AND {qual_ok_sql('o')}")
+    """
+    p = f"{alias}." if alias else ""
+    q = f"regexp_replace({p}measurement_qual, '\\.0+$', '')"
+    arms = " OR ".join(
+        f"({p}dataset_key = '{dk}' AND {q} IN ({', '.join(repr(c) for c in codes)}))"
+        for dk, codes in QUAL_EXCLUDE.items()
+    )
+    # COALESCE: a NULL flag must KEEP the row, and NOT(NULL) is NULL
+    return f"COALESCE(NOT ({arms}), TRUE)"

@@ -48,6 +48,10 @@ cc.cc_query("SELECT count(*) FROM obs").fetchone()      # one-shot
 cc.cc_get_db("v2026.08.14")                             # pin a version (reproducible)
 cc.cc_get_db(supplemental=True)                         # + obs_ctd_full (216M rows), obs_mets_full
 cc.cc_list_versions()[:3]
+
+# quality flags: obs.measurement_qual is each dataset's OWN code set (bottle/CTD 8 = suspect,
+# 9 = missing/bad; DIC WOCE 3/4/9). A flagged value is still a row — filter it:
+con.sql(f"SELECT * FROM obs o WHERE o.measurement_type = 'oxygen_ml_l' AND {cc.qual_ok_sql('o')}")
 ```
 
 To see what's in each table first: the [Schema explorer](https://calcofi.io/db-schema/).
