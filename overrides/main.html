@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{#- calcofi.io brand contract (https://calcofi.io/brand/v1/) for mkdocs-material.
+    material owns the header (logo -> extra.homepage = calcofi.io) and the palette
+    toggle; this block only makes the FIRST paint agree with the cross-site theme:
+    resolve it exactly as theme.js will, stamp <html>, and seed material's own
+    localStorage key ("<site root>.__palette", via __md_set from base.html just
+    above) so material's body script picks the matching scheme with no flash.
+    docs/javascripts/brand.js bridges the two directions after load. -#}
+{% block extrahead %}
+  <script>(function(){var m=/[?&]theme=(dark|light)\b/.exec(location.search),c=/(?:^|;\s*)cc_theme=(dark|light)/.exec(document.cookie),s=null;try{s=localStorage.getItem("theme")}catch(e){}var t=(m&&m[1])||(c&&c[1])||(s==="light"||s==="dark"?s:null)||"dark",d=document.documentElement;d.dataset.theme=t;d.setAttribute("data-bs-theme",t);d.setAttribute("data-md-color-scheme",t==="dark"?"slate":"default");d.style.colorScheme=t;
+  /* material's palette entries in mkdocs.yml order: 0 = slate (dark), 1 = default (light) */
+  var p={dark:{index:0,color:{media:"",scheme:"slate",primary:"custom",accent:"yellow"}},light:{index:1,color:{media:"",scheme:"default",primary:"custom",accent:"indigo"}}}[t];
+  try{var cur=__md_get("__palette");if(!cur||!cur.color||cur.color.scheme!==p.color.scheme)__md_set("__palette",p)}catch(e){}})();</script>
+  <link rel="stylesheet" href="https://calcofi.io/brand/v1/theme.css">
+{% endblock %}

@@ -70,6 +70,12 @@ plugins:
 extra_css:
   - stylesheets/extra.css
 
+# the cross-site theme (?theme= -> cc_theme cookie -> localStorage.theme -> dark) and
+# the bridge that keeps it and material's palette toggle agreeing in both directions
+extra_javascript:
+  - https://calcofi.io/brand/v1/theme.js
+  - javascripts/brand.js
+
 markdown_extensions:
   - admonition
   - pymdownx.highlight
@@ -77,6 +83,8 @@ markdown_extensions:
   - toc: {permalink: true}
 
 extra:
+  # material links the header logo here: the brand contract's far-left link to calcofi.io
+  homepage: https://calcofi.io
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/CalCOFI
