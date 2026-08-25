@@ -33,7 +33,33 @@ def cc_resolve_version(version: str = "latest") -> str:
         return _fetch_text(f"{BASE_HTTPS}/latest.txt").strip().splitlines()[0]
     if not version.startswith("v"):
         raise ValueError(f"version must be 'latest' or like 'v2026.08.14', got {version!r}")
+    _raise_if_retired(version)
     return version
+
+
+class RetiredVersionError(LookupError):
+    """The version's parquet was removed by archive thinning; ``.to`` names the replacement."""
+
+    def __init__(self, version: str, retired: dict):
+        self.version, self.to = version, retired.get("to")
+        super().__init__(
+            f"Release {version} was retired on {str(retired.get('retired_utc', ''))[:10]}: its parquet "
+            f"was removed from the archive (its notes and catalog remain). Use version={self.to!r} — "
+            "the nearest consolidated release — or 'latest'. See cc_list_versions()."
+        )
+
+
+def _raise_if_retired(version: str, versions: list[dict] | None = None) -> None:
+    # a thinned version keeps its sidecars but its parquet is gone (CalCOFI/workflows
+    # metadata/release_policy.yml); say so up front instead of failing per table on 404s
+    if versions is None:
+        try:
+            versions = cc_list_versions()
+        except Exception:  # noqa: BLE001 — offline: let the real fetch report
+            return
+    for r in versions:
+        if r.get("version") == version and r.get("retired"):
+            raise RetiredVersionError(version, r["retired"])
 
 
 def cc_catalog(version: str = "latest") -> dict:

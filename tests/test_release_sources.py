@@ -65,3 +65,14 @@ def test_duckdb_recovers_partition_column_from_canonical_style_list(tmp_path):
     got = con.sql(f"SELECT year, count(*) FROM {sql} GROUP BY year ORDER BY year").fetchall()
     # the {hash} directory between key=value and the file is not a hive segment
     assert got == [(2019, 2), (2020, 2)]
+
+
+def test_retired_version_raises_naming_replacement():
+    from calcofi4py.release import RetiredVersionError, _raise_if_retired
+
+    versions = [{"version": "v2026.05.15", "retired": {"retired_utc": "2026-09-01T00:00:00Z", "to": "v2026.06.26"}},
+                {"version": "v2026.06.26"}]
+    with pytest.raises(RetiredVersionError, match="retired on 2026-09-01.*v2026.06.26") as e:
+        _raise_if_retired("v2026.05.15", versions)
+    assert e.value.to == "v2026.06.26"
+    _raise_if_retired("v2026.06.26", versions)  # kept: no error

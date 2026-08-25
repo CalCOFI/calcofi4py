@@ -21,6 +21,8 @@ Content-addressed releases (mirrors calcofi4r 1.11.0).
   canonical release are read as an explicit https file list with
   `hive_partitioning = true` (no anonymous-S3 glob).
 - Tests share `tests/fixtures/catalog_*.json` byte-for-byte with calcofi4r.
+- `cc_resolve_version()` raises `RetiredVersionError` (with `.to`, the replacement) for a
+  version whose parquet was removed by archive thinning (`retired` in `versions.json`).
 
 ## 0.3.7 (2026-08-24)
 

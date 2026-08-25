@@ -25,6 +25,7 @@ https://calcofi.io/docs/data-access.html
 from .session import cc_session_info
 from .release import (
     QUAL_EXCLUDE,
+    RetiredVersionError,
     cc_catalog,
     cc_get_db,
     cc_list_versions,
