@@ -30,6 +30,11 @@ def test_canonical_resolves_to_content_addressed_objects():
         "https://storage.googleapis.com/calcofi-db/ducklake/tables/obs/year=2020/2222222222222222222222bb/data_0.parquet",
     ]
     assert s["hive"] is True
+    # the single-file twin is exposed separately, never mixed into the partition list
+    assert s["single_file"] == (
+        "https://storage.googleapis.com/calcofi-db/ducklake/tables/obs/9999999999999999999999ff/obs.parquet"
+    )
+    assert release_sources(cat, "cruise")["single_file"] is None
     sql = read_parquet_sql(s)
     assert sql.startswith("read_parquet(['https") and sql.endswith("'], hive_partitioning = true)")
     assert read_parquet_sql(release_sources(cat, "cruise")) == (
@@ -50,6 +55,7 @@ def test_legacy_resolves_to_per_release_paths():
     s = release_sources(cat, "obs")
     assert s["urls"] == ["s3://calcofi-db/ducklake/releases/v2026.08.14/parquet/obs/**/*.parquet"]
     assert s["hive"] is True
+    assert s["single_file"] == "https://storage.googleapis.com/calcofi-db/ducklake/releases/v2026.08.14/parquet/obs.parquet"
 
 
 def test_duckdb_recovers_partition_column_from_canonical_style_list(tmp_path):

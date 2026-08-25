@@ -84,8 +84,10 @@ def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -
     2. otherwise (releases before v2026.09) → the legacy per-release path, or an
        ``s3://`` glob for a partitioned table (DuckDB cannot glob over https).
 
-    Returns ``{"urls", "hive", "canonical", "hashes", "local_paths"}``;
-    ``local_paths`` mirror the bucket layout so a cache is content-addressed.
+    Returns ``{"urls", "hive", "canonical", "hashes", "local_paths", "single_file"}``;
+    ``local_paths`` mirror the bucket layout so a cache is content-addressed;
+    ``single_file`` is the whole-table file a partitioned table may also publish
+    (``obs`` does) for https-only readers — read it *or* ``urls``, never both.
     Never build a ``releases/{version}/parquet/…`` path by hand: it is only
     guaranteed to answer for the promoted and consolidated versions.
     """
@@ -96,6 +98,16 @@ def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -
     version = catalog["version"]
     objs = entry.get("objects") or []
     if objs:
+        single_file = None
+        if partitioned:
+            # a partitioned table may ALSO publish one whole-table file (obs does,
+            # for browser DuckDB-WASM and other https-only readers that cannot
+            # take a list): the object without a partition. Never read it
+            # alongside the partitions — that would double every row.
+            twins = [o for o in objs if "partition_by" not in o]
+            objs = [o for o in objs if "partition_by" in o]
+            if twins:
+                single_file = f"{base_https}/{twins[0]['path']}"
         paths = [o["path"] for o in objs]
         return {
             "urls": [f"{base_https}/{p}" for p in paths],
@@ -103,16 +115,21 @@ def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -
             "canonical": True,
             "hashes": [o.get("content_hash") for o in objs],
             "local_paths": [p.removeprefix("ducklake/") for p in paths],
+            "single_file": single_file,
         }
     if partitioned:
         return {
             "urls": [f"s3://calcofi-db/ducklake/releases/{version}/parquet/{table}/**/*.parquet"],
             "hive": True, "canonical": False, "hashes": [None], "local_paths": [None],
+            # obs is the one legacy partitioned table with a single-file twin
+            "single_file": (f"{base_https}/ducklake/releases/{version}/parquet/obs.parquet"
+                            if table == "obs" else None),
         }
     return {
         "urls": [f"{base_https}/ducklake/releases/{version}/parquet/{table}.parquet"],
         "hive": False, "canonical": False, "hashes": [None],
         "local_paths": [f"releases/{version}/parquet/{table}.parquet"],
+        "single_file": None,
     }
 
 
