@@ -5,6 +5,7 @@ Two data stores, two verbs:
 - **Public releases** (immutable Parquet on GCS, no credentials):
   ``cc_get_db()`` -> DuckDB connection with every release table as a view;
   ``cc_query(sql)`` for one-shots; ``cc_list_versions()`` / ``cc_catalog()``;
+  ``release_sources()`` — a catalog entry's parquet URLs (content-addressed since v2026.09);
   ``qual_ok_sql()`` — the WHERE predicate that drops flagged (suspect/bad) values.
 - **CTD QA/QC** (schema ``ctd`` in PostgreSQL): ``cc_ctd_casts()`` / ``cc_ctd_scans()``,
   portable QC rules (``cc_qc_spike()``, ``cc_qc_sensor_pair()``, ``cc_qc_range()``),
@@ -30,6 +31,8 @@ from .release import (
     cc_query,
     cc_resolve_version,
     qual_ok_sql,
+    read_parquet_sql,
+    release_sources,
 )
 from .ctd import (
     cc_bin_1m,
@@ -86,4 +89,4 @@ __all__ = [
     "cc_session_info",
     "qual_ok_sql",
 ]
-__version__ = "0.3.7"
+__version__ = "0.4.0"

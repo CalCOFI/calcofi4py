@@ -7,6 +7,27 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.4.0 (2026-08-25)
+
+Content-addressed releases (mirrors calcofi4r 1.11.0).
+
+- New `release_sources(catalog, table)` and `read_parquet_sql(src)`: the one place a
+  release table becomes parquet URLs. From the v2026.09 releases each table/partition is
+  an immutable object under `gs://calcofi-db/ducklake/tables/{table}/{content_hash}/…`
+  listed in the catalog's `objects[]`; earlier catalogs still resolve to their
+  per-release `releases/{version}/parquet/…` paths, which from now on are only
+  guaranteed for the promoted and consolidated versions — never build one by hand.
+- `cc_get_db()` resolves tables through `release_sources()`; partitioned tables on a
+  canonical release are read as an explicit https file list with
+  `hive_partitioning = true` (no anonymous-S3 glob).
+- Tests share `tests/fixtures/catalog_*.json` byte-for-byte with calcofi4r.
+
+## 0.3.7 (2026-08-24)
+
+- New `qual_ok_sql(alias=None)` and `QUAL_EXCLUDE`: the `WHERE` predicate that drops
+  suspect/bad/missing `measurement_qual` codes per dataset (bottle 8/9, CTD 8/9, DIC
+  3/4/9), mirroring `calcofi4r::cc_qual_ok_sql()`.
+
 ## 0.3.6 (2026-08-21)
 
 Docs and tooling — no API change.

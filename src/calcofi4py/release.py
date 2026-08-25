@@ -42,6 +42,61 @@ def cc_catalog(version: str = "latest") -> dict:
     return json.loads(_fetch_text(f"{BASE_HTTPS}/{version}/catalog.json"))
 
 
+BUCKET_HTTPS = "https://storage.googleapis.com/calcofi-db"
+
+
+def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -> dict:
+    """Where a release table's parquet bytes live. Mirrors ``calcofi4r::cc_release_sources()``.
+
+    Since the v2026.09 releases the database is content-addressed: each table (or
+    partition) is one immutable object under ``ducklake/tables/{table}/{hash}/…``,
+    listed per table in the catalog's ``objects[]``. Rules, in order:
+
+    1. entry has ``objects[]`` → one https URL per object, in catalog order
+       (partition files carry their ``key=value`` segment, so DuckDB's
+       ``hive_partitioning=true`` recovers the partition column);
+    2. otherwise (releases before v2026.09) → the legacy per-release path, or an
+       ``s3://`` glob for a partitioned table (DuckDB cannot glob over https).
+
+    Returns ``{"urls", "hive", "canonical", "hashes", "local_paths"}``;
+    ``local_paths`` mirror the bucket layout so a cache is content-addressed.
+    Never build a ``releases/{version}/parquet/…`` path by hand: it is only
+    guaranteed to answer for the promoted and consolidated versions.
+    """
+    entry = next((t for t in catalog["tables"] if t["name"] == table), None)
+    if entry is None:
+        raise KeyError(f"table {table!r} is not in the catalog for {catalog.get('version')}")
+    partitioned = bool(entry.get("partitioned"))
+    version = catalog["version"]
+    objs = entry.get("objects") or []
+    if objs:
+        paths = [o["path"] for o in objs]
+        return {
+            "urls": [f"{base_https}/{p}" for p in paths],
+            "hive": partitioned,
+            "canonical": True,
+            "hashes": [o.get("content_hash") for o in objs],
+            "local_paths": [p.removeprefix("ducklake/") for p in paths],
+        }
+    if partitioned:
+        return {
+            "urls": [f"s3://calcofi-db/ducklake/releases/{version}/parquet/{table}/**/*.parquet"],
+            "hive": True, "canonical": False, "hashes": [None], "local_paths": [None],
+        }
+    return {
+        "urls": [f"{base_https}/ducklake/releases/{version}/parquet/{table}.parquet"],
+        "hive": False, "canonical": False, "hashes": [None],
+        "local_paths": [f"releases/{version}/parquet/{table}.parquet"],
+    }
+
+
+def read_parquet_sql(src: dict, paths: list[str] | None = None) -> str:
+    """The ``read_parquet(...)`` SQL for a resolved source (mirrors ``cc_read_parquet_sql()``)."""
+    paths = list(src["urls"] if paths is None else paths)
+    lst = f"'{paths[0]}'" if len(paths) == 1 else "[" + ", ".join(f"'{p}'" for p in paths) + "]"
+    return f"read_parquet({lst}, hive_partitioning = true)" if src["hive"] else f"read_parquet({lst})"
+
+
 def _setup_gcs_httpfs(con: duckdb.DuckDBPyConnection) -> None:
     # anonymous s3-style access to GCS — required for the hive-partitioned globs
     con.execute("INSTALL httpfs; LOAD httpfs;")
@@ -87,21 +142,16 @@ def cc_get_db(
     elif not supplemental:
         tbls = [t for t in tbls if not t.get("supplemental")]
 
-    if any(t.get("partitioned") for t in tbls):
+    srcs = {t["name"]: release_sources(catalog, t["name"]) for t in tbls}
+    # a legacy partitioned table is an s3:// glob and needs the anonymous-S3
+    # settings; canonical objects are plain https
+    if any(u.startswith("s3://") for s in srcs.values() for u in s["urls"]):
         _setup_gcs_httpfs(con)
     else:
         con.execute("INSTALL httpfs; LOAD httpfs;")
 
-    for t in tbls:
-        name = t["name"]
-        if t.get("partitioned"):
-            src = (
-                f"read_parquet('{BASE_S3}/{version}/parquet/{name}/**/*.parquet',"
-                " hive_partitioning = true)"
-            )
-        else:
-            src = f"read_parquet('{BASE_HTTPS}/{version}/parquet/{name}.parquet')"
-        con.execute(f'CREATE OR REPLACE VIEW "{name}" AS SELECT * FROM {src}')
+    for name, src in srcs.items():
+        con.execute(f'CREATE OR REPLACE VIEW "{name}" AS SELECT * FROM {read_parquet_sql(src)}')
 
     return con
 
