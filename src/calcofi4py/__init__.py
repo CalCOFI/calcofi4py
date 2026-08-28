@@ -32,6 +32,9 @@ from .release import (
     cc_query,
     cc_resolve_version,
     qual_ok_sql,
+    density_sql,
+    default_stage,
+    default_denominator,
     read_parquet_sql,
     release_sources,
 )
@@ -89,5 +92,8 @@ __all__ = [
     "cc_resolve_version",
     "cc_session_info",
     "qual_ok_sql",
+    "density_sql",
+    "default_stage",
+    "default_denominator",
 ]
-__version__ = "0.4.0"
+__version__ = "0.5.0"

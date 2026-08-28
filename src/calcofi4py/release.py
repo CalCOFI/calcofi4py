@@ -239,3 +239,86 @@ def qual_ok_sql(alias: str | None = None) -> str:
     )
     # COALESCE: a NULL flag must KEEP the row, and NOT(NULL) is NULL
     return f"COALESCE(NOT ({arms}), TRUE)"
+
+# ---------------------------------------------------------------------------------------------
+# Effort and denominators (plan D8, 2026-08-28). A bio observation is a count, a count with the
+# effort that produced it, or a density a provider already standardized — not one population.
+#   density_per_10m2   areal, depth-integrated: count * std_haul_factor / prop_sorted for oblique and
+#                      vertical tows (C1, CB, CV, PV — never the surface manta MT); published per-m2 * 10
+#   density_per_1000m3 volumetric: count / prop_sorted / volume_sampled_m3 * 1000 for any tow with a
+#                      volume; published per-1000 m3 densities as is
+#   effort_class       count_with_effort | raw_count_no_effort | density_as_published | other_unit
+# Areal and volumetric are deliberately NOT converted into each other. The expression is the same
+# bytes as calcofi4r::cc_density_sql() and the explorer's sql/density.sql; tests/fixtures pins it.
+DENSITY_UNITS = {"area": ("count/m2", "numberPerMeterSquared"), "volume": ("count/1000m3",)}
+AREAL_GEARS = ("C1", "CB", "CV", "PV")
+
+
+def density_sql(
+    alias: str | None = None,
+    value: str = "measurement_value",
+    units: str = "units",
+    tow_type: str = "tow_type",
+    std_haul_factor: str = "std_haul_factor",
+    prop_sorted: str = "prop_sorted",
+    volume_sampled_m3: str = "volume_sampled_m3",
+    as_select: bool = True,
+) -> str | dict[str, str]:
+    """SQL deriving ``density_per_10m2``, ``density_per_1000m3`` and ``effort_class``.
+
+    Returns one ``SELECT``-list fragment of three ``expr AS name`` clauses (``as_select=True``),
+    or the three bare expressions keyed by column name. Byte-identical to
+    ``calcofi4r::cc_density_sql()``.
+    """
+    p = f"{alias}." if alias else ""
+    v, u, tt = p + value, p + units, p + tow_type
+    shf, ps, vol = p + std_haul_factor, p + prop_sorted, p + volume_sampled_m3
+    q = lambda xs: ", ".join(f"'{x}'" for x in xs)  # noqa: E731
+    sorted_ = f"COALESCE(NULLIF({ps}, 0), 1)"  # 0 or NULL prop_sorted = all of it was sorted
+    ex = {
+        "density_per_10m2": (
+            f"CASE WHEN {u} = 'count' AND {shf} IS NOT NULL AND {tt} IN ({q(AREAL_GEARS)}) THEN {v} * {shf} / {sorted_}\n"
+            f"     WHEN {u} IN ({q(DENSITY_UNITS['area'])}) THEN {v} * 10\n     END"),
+        "density_per_1000m3": (
+            f"CASE WHEN {u} = 'count' AND {vol} IS NOT NULL AND {vol} > 0 THEN {v} / {sorted_} / {vol} * 1000\n"
+            f"     WHEN {u} IN ({q(DENSITY_UNITS['volume'])}) THEN {v}\n     END"),
+        "effort_class": (
+            f"CASE WHEN {u} = 'count' AND {shf} IS NULL AND {vol} IS NULL THEN 'raw_count_no_effort'\n"
+            f"     WHEN {u} = 'count' THEN 'count_with_effort'\n"
+            f"     WHEN {u} IN ({q(DENSITY_UNITS['area'] + DENSITY_UNITS['volume'])}) THEN 'density_as_published'\n"
+            f"     ELSE 'other_unit' END"),
+    }
+    if not as_select:
+        return ex
+    return ",\n".join(f"{e} AS {k}" for k, e in ex.items())
+
+
+def default_stage(picker: list[dict]) -> str | None:
+    """The life stage a taxon opens on: most rows carrying effort, tie -> most rows (D8 rule 4).
+
+    ``picker`` rows carry ``dataset_key, life_stage, n, n_10m2, n_1000m3`` (one per dataset x stage).
+    Eggs and larvae are never merged; ``None`` is a stage of its own.
+    """
+    if not picker:
+        return None
+    eff: dict = {}
+    n: dict = {}
+    for r in picker:
+        k = r.get("life_stage")
+        eff[k] = eff.get(k, 0) + max(r["n_10m2"], r["n_1000m3"])
+        n[k] = n.get(k, 0) + r["n"]
+    return sorted(eff, key=lambda k: (-eff[k], -n[k], k or ""))[0]
+
+
+def default_denominator(picker: list[dict], stage: str | None) -> str:
+    """The denominator covering the most datasets *with effort* for this stage — never largest-n.
+
+    ``per_10m2`` on a tie (areal, depth-integrated is the CalCOFI convention); ``raw`` only when
+    nothing carries effort, and the caller labels it as not comparable across gear or datasets.
+    """
+    rows = [r for r in picker if r.get("life_stage") == stage]
+    ds10 = {r["dataset_key"] for r in rows if r["n_10m2"] > 0}
+    ds1000 = {r["dataset_key"] for r in rows if r["n_1000m3"] > 0}
+    if not ds10 and not ds1000:
+        return "raw"
+    return "per_1000m3" if len(ds1000) > len(ds10) else "per_10m2"

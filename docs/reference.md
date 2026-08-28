@@ -41,3 +41,13 @@ products, and plot — see the worked notebook
 ::: calcofi4py.ctd.cc_flag_summary
 
 ::: calcofi4py.session.cc_session_info
+
+## Quality and effort
+
+::: calcofi4py.release.qual_ok_sql
+
+::: calcofi4py.release.density_sql
+
+::: calcofi4py.release.default_stage
+
+::: calcofi4py.release.default_denominator

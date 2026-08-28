@@ -7,6 +7,15 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.5.0 (2026-08-28)
+
+- `density_sql()` — the one SQL expression deriving `density_per_10m2`, `density_per_1000m3` and
+  `effort_class` from a count, its units, gear and effort (plan D8 rule 2); byte-identical to
+  `calcofi4r::cc_density_sql()` (`tests/fixtures/density_sql.txt` pins it). `DENSITY_UNITS`,
+  `AREAL_GEARS` are the vocabularies.
+- `default_stage()` / `default_denominator()` — the picker's rule-4 defaults (most rows with effort;
+  most datasets with effort, never largest-n; `per_10m2` on a tie; `raw` only when nothing has effort).
+
 ## 0.4.0 (2026-08-25)
 
 Content-addressed releases (mirrors calcofi4r 1.11.0).
