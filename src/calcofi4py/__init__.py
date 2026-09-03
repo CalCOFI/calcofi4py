@@ -26,6 +26,7 @@ from .session import cc_session_info
 from .release import (
     QUAL_EXCLUDE,
     RetiredVersionError,
+    catalog_views,
     cc_catalog,
     cc_get_db,
     cc_list_versions,
@@ -37,6 +38,8 @@ from .release import (
     default_denominator,
     read_parquet_sql,
     release_sources,
+    view_sql,
+    view_tables,
 )
 from .ctd import (
     cc_bin_1m,
@@ -95,5 +98,10 @@ __all__ = [
     "density_sql",
     "default_stage",
     "default_denominator",
+    "read_parquet_sql",
+    "release_sources",
+    "catalog_views",
+    "view_sql",
+    "view_tables",
 ]
 __version__ = "0.5.0"

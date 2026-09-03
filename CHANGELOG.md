@@ -7,6 +7,25 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.6.0 (2026-09-03)
+
+- `cc_get_db()` creates every **view** a release's `catalog.json` carries (`views`: name → SQL over
+  `{{table}}` tokens; calcofi4db 3.31.0, pre-release plan D-S1) after the tables it reads. `obs` is
+  the first: the UNION ALL over `obs_bio` + `obs_env` that reconstructs its 18 columns under their
+  original names, so `FROM obs` keeps working while the observation rows ship once, as the pair. A
+  deprecated table's own objects (`obs` still ships them this release) are read only when the view's
+  sources are not loaded; naming a view in `tables=` pulls in the tables it reads.
+- `catalog_views(catalog)`, `view_tables(sql)`, `view_sql(catalog, name, rp=None)` — the view map, a
+  view's source tables, and its SQL with every token replaced by `rp(table)` (a quoted identifier by
+  default, or `read_parquet(...)` for a connection without the tables).
+- `release_sources()` raises a clear `KeyError` for a view (`'obs' is a view … not a table with parquet
+  objects`) and returns `deprecated` / `replaced_by` / `removed_in` for a table the catalog deprecates.
+- Consumers: `SELECT * FROM obs` returns the columns in `obs`'s table order (`dataset_key` third), where a
+  view over the hive partitions returned it last; an ichthyoplankton row's `depth_min_m` / `depth_max_m`
+  is its tow's span (482,250 rows that were NULL); `obs_bio` / `obs_env` are default tables. Fixture
+  catalogs (`tests/fixtures/catalog_canonical.json`, new `catalog_view_only.json`) stay byte-identical with
+  calcofi4r's and db-query's.
+
 ## 0.5.0 (2026-08-28)
 
 - `density_sql()` — the one SQL expression deriving `density_per_10m2`, `density_per_1000m3` and

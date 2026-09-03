@@ -9,6 +9,7 @@ no full download; DuckDB reads only the columns and row groups a query touches.
 from __future__ import annotations
 
 import json
+import re
 import urllib.request
 
 import duckdb
@@ -93,9 +94,24 @@ def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -
     """
     entry = next((t for t in catalog["tables"] if t["name"] == table), None)
     if entry is None:
+        views = catalog_views(catalog)
+        if table in views:
+            raise KeyError(
+                f"{table!r} is a view in the catalog for {catalog.get('version')} (over "
+                f"{', '.join(view_tables(views[table]))}), not a table with parquet objects: "
+                f"cc_get_db() creates it, and view_sql(catalog, {table!r}, rp) is its SQL over "
+                "however you read those tables"
+            )
         raise KeyError(f"table {table!r} is not in the catalog for {catalog.get('version')}")
     partitioned = bool(entry.get("partitioned"))
     version = catalog["version"]
+    # a table the catalog deprecates still resolves — its objects ship through the
+    # deprecation window — but says so, so a caller can warn or migrate
+    dep = {
+        "deprecated": bool(entry.get("deprecated")),
+        "replaced_by": list(entry.get("replaced_by") or []),
+        "removed_in": entry.get("removed_in"),
+    }
     objs = entry.get("objects") or []
     if objs:
         single_file = None
@@ -116,6 +132,7 @@ def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -
             "hashes": [o.get("content_hash") for o in objs],
             "local_paths": [p.removeprefix("ducklake/") for p in paths],
             "single_file": single_file,
+            **dep,
         }
     if partitioned:
         return {
@@ -124,12 +141,14 @@ def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -
             # obs is the one legacy partitioned table with a single-file twin
             "single_file": (f"{base_https}/ducklake/releases/{version}/parquet/obs.parquet"
                             if table == "obs" else None),
+            **dep,
         }
     return {
         "urls": [f"{base_https}/ducklake/releases/{version}/parquet/{table}.parquet"],
         "hive": False, "canonical": False, "hashes": [None],
         "local_paths": [f"releases/{version}/parquet/{table}.parquet"],
         "single_file": None,
+        **dep,
     }
 
 
@@ -138,6 +157,58 @@ def read_parquet_sql(src: dict, paths: list[str] | None = None) -> str:
     paths = list(src["urls"] if paths is None else paths)
     lst = f"'{paths[0]}'" if len(paths) == 1 else "[" + ", ".join(f"'{p}'" for p in paths) + "]"
     return f"read_parquet({lst}, hive_partitioning = true)" if src["hive"] else f"read_parquet({lst})"
+
+
+# views ------------------------------------------------------------------------------------------
+# Since the v2026.09 releases (calcofi4db 3.31.0, pre-release plan D-S1) catalog.json may carry a
+# top-level ``views`` map: view name -> SQL over ``{{table}}`` tokens, one per table it reads.
+# ``obs`` is the first: the UNION ALL over obs_bio + obs_env that reconstructs its 18 columns under
+# their original names, so ``FROM obs`` keeps working while the observation rows ship once, as the
+# pair. The table a view replaces is marked ``deprecated`` (with ``replaced_by`` / ``removed_in``)
+# for the release it still ships in. Mirrors calcofi4r::cc_catalog_views() / cc_view_tables() /
+# cc_view_sql() and db-query lib/release.js.
+_VIEW_TOKEN = re.compile(r"\{\{([A-Za-z0-9_]+)\}\}")
+
+
+def catalog_views(catalog: dict) -> dict[str, str]:
+    """The catalog's views: ``{name: sql}`` (SQL over ``{{table}}`` tokens); ``{}`` when none."""
+    v = catalog.get("views") or {}
+    return {k: str(s) for k, s in v.items()}
+
+
+def view_tables(sql: str) -> list[str]:
+    """The distinct tables a view's SQL reads, in order of first appearance."""
+    return list(dict.fromkeys(_VIEW_TOKEN.findall(sql)))
+
+
+def view_sql(catalog: dict, name: str, rp=None) -> str:
+    """A view's SQL with every ``{{table}}`` token replaced by ``rp(table)``.
+
+    ``rp`` defaults to the quoted identifier (the tables exist in the connection, as
+    :func:`cc_get_db` arranges); pass ``lambda t: read_parquet_sql(release_sources(catalog, t))``
+    for a connection that has none. Wrap the result in parentheses to use it in a ``FROM``.
+    """
+    views = catalog_views(catalog)
+    if name not in views:
+        hint = f" (views: {', '.join(views)})" if views else ""
+        raise KeyError(f"{name!r} is not a view in the catalog for {catalog.get('version')}{hint}")
+    if rp is None:
+        rp = lambda t: f'"{t}"'  # noqa: E731
+    sql = views[name]
+    for t in view_tables(sql):
+        sql = sql.replace("{{" + t + "}}", rp(t))
+    return sql
+
+
+def _create_catalog_views(con: duckdb.DuckDBPyConnection, catalog: dict, created: set[str]) -> list[str]:
+    """CREATE the catalog views whose source tables are all in ``created``; returns their names."""
+    made = []
+    for name, sql in catalog_views(catalog).items():
+        if not set(view_tables(sql)) <= created:
+            continue
+        con.execute(f'CREATE OR REPLACE VIEW "{name}" AS {view_sql(catalog, name)}')
+        made.append(name)
+    return made
 
 
 def _setup_gcs_httpfs(con: duckdb.DuckDBPyConnection) -> None:
@@ -171,6 +242,13 @@ def cc_get_db(
       that already has the PostgreSQL database attached) instead of a new
       in-memory one.
 
+    A catalog may also carry **views** (:func:`catalog_views`): ``obs`` is one since
+    the v2026.09 releases, the UNION ALL over the observation tables ``obs_bio`` +
+    ``obs_env``. Every view whose source tables load is created after them, so
+    ``FROM obs`` keeps working; the deprecated ``obs`` table's own objects are read
+    only when those sources are not loaded, and naming a view in ``tables`` pulls
+    in the tables it reads.
+
     >>> con = cc_get_db()
     >>> con.sql("SELECT count(*) FROM sample").fetchone()
     """
@@ -178,6 +256,22 @@ def cc_get_db(
     catalog = cc_catalog(version)
     if con is None:
         con = duckdb.connect()
+    return _register_catalog(con, catalog, tables=tables, supplemental=supplemental)
+
+
+def _register_catalog(
+    con: duckdb.DuckDBPyConnection,
+    catalog: dict,
+    tables: list[str] | None = None,
+    supplemental: bool = False,
+    base_https: str = BUCKET_HTTPS,
+) -> duckdb.DuckDBPyConnection:
+    """Bind a catalog's tables (as views over their parquet) and then its views onto ``con``."""
+    views = catalog_views(catalog)
+    if tables is not None:
+        tables = list(tables)
+        for vn in [t for t in tables if t in views]:
+            tables += [t for t in view_tables(views[vn]) if t not in tables]
 
     tbls = catalog["tables"]
     if tables is not None:
@@ -185,7 +279,14 @@ def cc_get_db(
     elif not supplemental:
         tbls = [t for t in tbls if not t.get("supplemental")]
 
-    srcs = {t["name"]: release_sources(catalog, t["name"]) for t in tbls}
+    # a view whose source tables are all loading is served as that view; the
+    # objects of the table it replaces (deprecated, still shipped through the
+    # window) are read only when its sources are not here
+    names = {t["name"] for t in tbls}
+    served_by_view = {vn for vn, sql in views.items() if set(view_tables(sql)) <= names}
+    tbls = [t for t in tbls if t["name"] not in served_by_view]
+
+    srcs = {t["name"]: release_sources(catalog, t["name"], base_https) for t in tbls}
     # a legacy partitioned table is an s3:// glob and needs the anonymous-S3
     # settings; canonical objects are plain https
     if any(u.startswith("s3://") for s in srcs.values() for u in s["urls"]):
@@ -195,7 +296,7 @@ def cc_get_db(
 
     for name, src in srcs.items():
         con.execute(f'CREATE OR REPLACE VIEW "{name}" AS SELECT * FROM {read_parquet_sql(src)}')
-
+    _create_catalog_views(con, catalog, set(srcs))
     return con
 
 
