@@ -1,0 +1,47 @@
+[
+  {
+    "id": "calcofi_release_v2026_09_03",
+    "type": "dataset",
+    "title": "CalCOFI Integrated Database, release v2026.09.03",
+    "author": [
+      { "literal": "CalCOFI" }
+    ],
+    "issued": { "date-parts": [[2026]] },
+    "publisher": "Scripps Institution of Oceanography, NOAA Fisheries, and California Department of Fish and Wildlife",
+    "DOI": "10.5281/zenodo.99999999",
+    "URL": "https://doi.org/10.5281/zenodo.99999999"
+  },
+  {
+    "id": "calcofi_dic",
+    "type": "dataset",
+    "title": "CalCOFI Dissolved Inorganic Carbon Data",
+    "author": [
+      { "literal": "Wang, X.J." },
+      { "literal": "Sutula, M." }
+    ],
+    "issued": { "date-parts": [[2021]] },
+    "DOI": "10.25921/3w9f-jd72",
+    "URL": "https://doi.org/10.25921/3w9f-jd72",
+    "note": "License: CC-BY-4.0"
+  },
+  {
+    "id": "cce-lter_zoodb",
+    "type": "dataset",
+    "title": "Zooplankton biomass and net sampling data (CCE LTER ZooDB)",
+    "author": [
+      { "literal": "CCE LTER" }
+    ],
+    "issued": { "date-parts": [[2019]] },
+    "note": "License: custom (https://oceaninformatics.ucsd.edu/zoodb/terms)"
+  },
+  {
+    "id": "farallon_bird-mammal",
+    "type": "dataset",
+    "title": "Farallon Islands seabird and pinniped census",
+    "author": [
+      { "literal": "Point Blue Conservation Science" }
+    ],
+    "issued": { "date-parts": [[2020]] },
+    "note": "License: CC-BY-4.0; Acknowledgement: Data collected under National Marine Sanctuary permit; please acknowledge Point Blue Conservation Science."
+  }
+]

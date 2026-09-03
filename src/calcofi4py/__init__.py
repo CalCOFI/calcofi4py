@@ -22,7 +22,10 @@ Docs: https://calcofi.io/docs/server-access.html and
 https://calcofi.io/docs/data-access.html
 """
 
+from datetime import date as _date
+
 from .session import cc_session_info
+from .cite import cc_cite
 from .release import (
     QUAL_EXCLUDE,
     RetiredVersionError,
@@ -70,6 +73,7 @@ __all__ = [
     "QUAL_EXCLUDE",
     "cc_bin_1m",
     "cc_catalog",
+    "cc_cite",
     "cc_ctd_casts",
     "cc_ctd_scans",
     "cc_flag_summary",
@@ -105,3 +109,10 @@ __all__ = [
     "view_tables",
 ]
 __version__ = "0.6.0"
+
+# software citation (the package, not the data — cc_cite() is for the data; mirrors R's
+# `citation("calcofi4r")`, which reads DESCRIPTION's Authors@R)
+__citation__ = (
+    f"Best, B. ({_date.today().year}). calcofi4py: CalCOFI Python helpers "
+    f"(version {__version__}) [Software]. https://github.com/CalCOFI/calcofi4py"
+)

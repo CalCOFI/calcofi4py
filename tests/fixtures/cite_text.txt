@@ -1,0 +1,12 @@
+CalCOFI (2026). CalCOFI Integrated Database, release v2026.09.03 [Data set]. Scripps Institution of Oceanography, NOAA Fisheries, and California Department of Fish and Wildlife. https://doi.org/10.5281/zenodo.99999999
+
+Wang, X.J. et al. (2021). CalCOFI Dissolved Inorganic Carbon Data. NOAA National Centers for Environmental Information.
+License: CC-BY-4.0
+DOI: https://doi.org/10.25921/3w9f-jd72
+
+CCE LTER (2019). Zooplankton biomass and net sampling data. oceaninformatics.ucsd.edu.
+License: custom (https://oceaninformatics.ucsd.edu/zoodb/terms)
+
+Point Blue Conservation Science (2020). Farallon Islands seabird and pinniped census.
+License: CC-BY-4.0
+Acknowledgement: Data collected under National Marine Sanctuary permit; please acknowledge Point Blue Conservation Science.

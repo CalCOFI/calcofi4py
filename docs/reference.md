@@ -10,6 +10,12 @@ Everything is importable from the top level: `import calcofi4py as cc`.
 ::: calcofi4py.release.cc_catalog
 ::: calcofi4py.release.cc_resolve_version
 
+## Citing CalCOFI data
+
+See [Citing CalCOFI data](citing.md) for a walkthrough.
+
+::: calcofi4py.cite.cc_cite
+
 ## PostgreSQL (CTD QA/QC working database)
 
 ::: calcofi4py.postgres.cc_pg_connect

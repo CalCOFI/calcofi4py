@@ -1,0 +1,31 @@
+@misc{calcofi_release_v2026_09_03,
+  title     = {CalCOFI Integrated Database, release v2026.09.03},
+  author    = {CalCOFI},
+  year      = {2026},
+  publisher = {Scripps Institution of Oceanography, NOAA Fisheries, and California Department of Fish and Wildlife},
+  doi       = {10.5281/zenodo.99999999},
+  url       = {https://doi.org/10.5281/zenodo.99999999}
+}
+
+@misc{calcofi_dic,
+  title        = {CalCOFI Dissolved Inorganic Carbon Data},
+  howpublished = {Wang, X.J. et al. (2021). CalCOFI Dissolved Inorganic Carbon Data. NOAA National Centers for Environmental Information.},
+  year         = {2021},
+  doi          = {10.25921/3w9f-jd72},
+  url          = {https://doi.org/10.25921/3w9f-jd72},
+  note         = {License: CC-BY-4.0}
+}
+
+@misc{cce-lter_zoodb,
+  title        = {Zooplankton biomass and net sampling data (CCE LTER ZooDB)},
+  howpublished = {CCE LTER (2019). Zooplankton biomass and net sampling data. oceaninformatics.ucsd.edu.},
+  year         = {2019},
+  note         = {License: custom (https://oceaninformatics.ucsd.edu/zoodb/terms)}
+}
+
+@misc{farallon_bird-mammal,
+  title        = {Farallon Islands seabird and pinniped census},
+  howpublished = {Point Blue Conservation Science (2020). Farallon Islands seabird and pinniped census.},
+  year         = {2020},
+  note         = {License: CC-BY-4.0; Acknowledgement: Data collected under National Marine Sanctuary permit; please acknowledge Point Blue Conservation Science.}
+}
