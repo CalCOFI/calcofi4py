@@ -45,6 +45,12 @@ you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
   `cc_cite()` is for the data. Mirrors `calcofi4r::cc_cite()` byte-for-byte (`tests/fixtures/cite_text.txt`
   / `cite_bibtex.txt` / `cite_csl.json`, byte-identical with `calcofi4r/tests/testthat/fixtures/cite_*`).
   New docs page: [Citing CalCOFI data](https://calcofi.io/calcofi4py/citing/).
+- **A release frozen before the attribution contract cites without erroring.** `_rows()` selected
+  `license_url`, `doi` and `acknowledgement` by name, so on v2026.08.25's 18-column `dataset` table
+  (calcofi4db < 3.30.0) every `cc_cite()` call was a DuckDB binder error instead of a citation. It now
+  reads the columns the table has (`DESCRIBE dataset`) and treats an absent one as empty — the entry
+  simply has no `DOI:` / `Acknowledgement:` line (found by WS-A4; tested against a legacy-shaped
+  `dataset` table, byte-identical fixtures with calcofi4r).
 
 ## 0.5.0 (2026-08-28)
 

@@ -154,3 +154,70 @@ def test_bibtex_resolve_true_tries_doi_first_then_falls_back(monkeypatch):
         raise AssertionError("must not be called when resolve=False")
     monkeypatch.setattr("calcofi4py.cite._doi_bibtex", _must_not_be_called)
     cc_cite("calcofi_dic", con=con, version="v2026.09.03", format="bibtex")  # resolve=False default
+
+
+# the 18 columns the released `dataset` table had before the attribution contract
+# (v2026.08.25, calcofi4db < 3.30.0): no doi, license_url or acknowledgement
+_LEGACY_COLS = [
+    "dataset_key", "provider", "dataset", "dataset_name", "dataset_name_short", "category",
+    "color", "description", "citation_main", "citation_others", "link_calcofi_org",
+    "link_data_source", "link_others", "tables", "coverage_temporal", "coverage_spatial",
+    "license", "pi_names"]
+
+
+def _legacy_con():
+    con = duckdb.connect()
+    con.execute("CREATE TABLE dataset (" + ", ".join(f"{c} VARCHAR" for c in _LEGACY_COLS) + ")")
+    con.execute("""
+        INSERT INTO dataset (dataset_key, provider, dataset, dataset_name, citation_main, license, pi_names) VALUES
+          ('calcofi_dic', 'calcofi', 'dic', 'CalCOFI Dissolved Inorganic Carbon Data',
+           'Wang, X.J. et al. (2021). CalCOFI Dissolved Inorganic Carbon Data. NOAA National Centers for Environmental Information.',
+           'CC-BY-4.0', 'Wang, X.J.; Sutula, M.'),
+          ('cce-lter_zoodb', 'cce-lter', 'zoodb', 'Zooplankton biomass and net sampling data (CCE LTER ZooDB)',
+           'CCE LTER (2019). Zooplankton biomass and net sampling data. oceaninformatics.ucsd.edu.',
+           'custom', 'CCE LTER'),
+          ('farallon_bird-mammal', 'farallon', 'bird-mammal', 'Farallon Islands seabird and pinniped census',
+           'Point Blue Conservation Science (2020). Farallon Islands seabird and pinniped census.',
+           'CC-BY-4.0', 'Point Blue Conservation Science')
+    """)
+    return con
+
+
+def test_pre_contract_dataset_table_cites_without_doi_license_url_acknowledgement(monkeypatch):
+    con = _legacy_con()
+    cols = [r[0] for r in con.execute("DESCRIBE dataset").fetchall()]
+    assert len(cols) == 18
+    assert not {"doi", "license_url", "acknowledgement"} & set(cols)
+    monkeypatch.setattr("calcofi4py.cite.cc_catalog", lambda *a, **k: _catalog())
+
+    # text: the release citation, then citation_main + its License line — and nothing the
+    # table cannot supply (no DOI: / Acknowledgement: line, no URL after `custom`)
+    txt = cc_cite(con=con, version="v2026.09.03")
+    assert len(txt) == 4
+    assert txt[0] == _catalog()["citation"]
+    assert txt.source == "release"
+    assert txt[1] == ("Wang, X.J. et al. (2021). CalCOFI Dissolved Inorganic Carbon Data. "
+                      "NOAA National Centers for Environmental Information.\nLicense: CC-BY-4.0")
+    assert txt[2] == ("CCE LTER (2019). Zooplankton biomass and net sampling data. "
+                      "oceaninformatics.ucsd.edu.\nLicense: custom")
+    assert not any(("DOI: " in t) or ("Acknowledgement: " in t) or ("License: custom (" in t) for t in txt)
+
+    # bibtex: the dataset entries carry no doi / url field (the release entry keeps its DOI)
+    bib = cc_cite(con=con, version="v2026.09.03", format="bibtex")
+    ents = str(bib).split("\n\n")
+    assert len(ents) == 4
+    assert ents[1].startswith("@misc{calcofi_dic,")
+    assert all("\n  doi " not in e and "\n  url " not in e for e in ents[1:])
+    assert all("\n  note " in e for e in ents[1:])
+
+    # csl: no DOI / URL on a dataset item; the note is the license alone
+    csl = cc_cite(con=con, version="v2026.09.03", format="csl")
+    assert len(csl) == 4
+    assert "DOI" not in csl[1] and "URL" not in csl[1]
+    assert csl[1]["note"] == "License: CC-BY-4.0"
+    assert csl[2]["note"] == "License: custom"
+
+    # a subset and a list of dicts go through the same path
+    assert len(cc_cite("cce-lter_zoodb", con=con, version="v2026.09.03")) == 2
+    assert len(cc_cite([{"dataset_key": "calcofi_dic"}, {"dataset_key": "calcofi_dic"}],
+                       con=con, version="v2026.09.03")) == 2

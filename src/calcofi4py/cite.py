@@ -77,15 +77,32 @@ def _release_fields(catalog: dict) -> dict:
     }
 
 
+# the ``dataset`` columns cc_cite() reads; any one absent from a release is None
+_DATASET_COLS = ["dataset_key", "dataset_name", "citation_main", "license", "license_url",
+                 "doi", "acknowledgement", "pi_names"]
+
+
 def _rows(con: duckdb.DuckDBPyConnection, x) -> list[dict]:
     """Resolve which dataset_key values to cite, in the order to cite them: ``None`` -> every
     dataset in ``con``'s ``dataset`` table, alphabetical dataset_key order; a list of dataset_key
     strings, or anything carrying a ``dataset_key`` column (a pandas/polars DataFrame, a list of
     dicts) -> those keys, de-duplicated, in first-occurrence order. An unmatched key is a
     ``KeyError`` naming it — cc_cite() never silently drops one."""
-    cols = "dataset_key, dataset_name, citation_main, license, license_url, doi, acknowledgement, pi_names"
-    all_rows = con.execute(f"SELECT {cols} FROM dataset").fetchall()
-    by_key = {r[0]: dict(zip(cols.split(", "), r)) for r in all_rows}
+    # select only the columns this release's ``dataset`` table has: a release frozen before
+    # the attribution contract (calcofi4db < 3.30.0, e.g. v2026.08.25) carries no
+    # license_url / doi / acknowledgement, and a fixed SELECT was a binder error on every
+    # call instead of a citation with fewer lines
+    have = [r[0] for r in con.execute("DESCRIBE dataset").fetchall()]
+    present = [c for c in _DATASET_COLS if c in have]
+    if "dataset_key" not in present:
+        raise KeyError("cc_cite(): the `dataset` table has no dataset_key column")
+    all_rows = con.execute(f"SELECT {', '.join(present)} FROM dataset").fetchall()
+    by_key = {}
+    for r in all_rows:
+        d = dict(zip(present, r))
+        for c in _DATASET_COLS:
+            d.setdefault(c, None)
+        by_key[d["dataset_key"]] = d
 
     if x is None:
         keys = sorted(by_key)
