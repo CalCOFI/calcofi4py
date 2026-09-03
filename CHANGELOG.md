@@ -25,6 +25,26 @@ you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
   is its tow's span (482,250 rows that were NULL); `obs_bio` / `obs_env` are default tables. Fixture
   catalogs (`tests/fixtures/catalog_canonical.json`, new `catalog_view_only.json`) stay byte-identical with
   calcofi4r's and db-query's.
+- **`cc_cite(x=None, version="latest", format="text", con=None, resolve=False)`** — the attribution
+  contract's read side (plan 2026-09-03, WS-A2). Reads a release's `dataset` table (`citation_main`,
+  `license`, `doi`, `acknowledgement` — calcofi4db ≥ 3.30.0) and its `catalog.json` `citation`, and
+  formats them for a paper, a DMP or a `.bib` file: the release citation first, then one entry per
+  dataset — every dataset in the release (`x=None`, alphabetical `dataset_key`), a `dataset_key`
+  string, a list of them, or anything carrying a `dataset_key` column (a pandas/polars DataFrame, so
+  `cc_cite(query_result)` cites exactly what a query touched). An unknown `dataset_key` raises
+  `KeyError` naming it.
+- `format="text"` appends a `License:` line (+ URL for a `custom` license), `DOI:` and
+  `Acknowledgement:` lines to each dataset's `citation_main`; `format="bibtex"` builds one
+  `@misc{...}` per entry **offline**, from the same fields — `resolve=True` is the only network
+  path, fetching a DOI's own BibTeX from `doi.org` (falling back to the offline entry on failure);
+  `format="csl"` returns one CSL-JSON `"dataset"` item per entry.
+- A release frozen before the attribution contract carries no `catalog.json` `citation`; `cc_cite()`
+  computes the same wording `calcofi4db.release_citation()` would have written, and says so on the
+  result's `.source` attribute (`"release"` vs `"computed"`).
+- `calcofi4py.__citation__` — the software citation (mirrors R's `citation("calcofi4r")`);
+  `cc_cite()` is for the data. Mirrors `calcofi4r::cc_cite()` byte-for-byte (`tests/fixtures/cite_text.txt`
+  / `cite_bibtex.txt` / `cite_csl.json`, byte-identical with `calcofi4r/tests/testthat/fixtures/cite_*`).
+  New docs page: [Citing CalCOFI data](https://calcofi.io/calcofi4py/citing/).
 
 ## 0.5.0 (2026-08-28)
 

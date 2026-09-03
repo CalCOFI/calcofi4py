@@ -39,6 +39,7 @@ theme:
 
 nav:
   - Home: index.md
+  - Citing CalCOFI data: citing.md
   - Articles:
       - CTD QA/QC walkthrough: articles/ctd-qaqc.ipynb
   - API reference: reference.md
