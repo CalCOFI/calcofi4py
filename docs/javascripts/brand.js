@@ -1,4 +1,4 @@
-/* calcofi.io brand bridge (https://calcofi.io/brand/v1/) for mkdocs-material.
+/* calcofi.io brand bridge (https://calcofi.io/brand/v2/) for mkdocs-material.
    theme.js resolves the cross-site theme and stamps data-md-color-scheme on
    <html>; material keys its css on the same attribute on <body> and stores the
    choice in localStorage "<site root>.__palette". this keeps the two agreeing:
@@ -19,7 +19,7 @@
   }
 
   // (a) on load the resolved theme wins (a ?theme= link, the cross-site cookie)
-  pushToMaterial(root.dataset.theme === "light" ? "light" : "dark");
+  pushToMaterial(root.dataset.theme === "dark" ? "dark" : "light");
 
   // (b) material's toggle -> brand: cookie, <html> attributes, cc:theme event
   document.querySelectorAll('input[name="__palette"]').forEach(function (input) {

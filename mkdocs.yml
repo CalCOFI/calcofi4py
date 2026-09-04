@@ -17,21 +17,21 @@ hooks:
 
 theme:
   name: material
-  # overrides/main.html: the calcofi.io brand pre-paint (https://calcofi.io/brand/v1/)
+  # overrides/main.html: the calcofi.io brand pre-paint (https://calcofi.io/brand/v2/)
   custom_dir: overrides
   # the calcofi4py squircle, one of the brand's two designed favicon exceptions
   logo: assets/logo.svg
   favicon: assets/logo.svg
-  # dark by default (first palette entry), light one toggle away
+  # light by default (first palette entry; brand v2, 2026-09-04), dark one toggle away
   palette:
-    - scheme: slate
-      primary: custom
-      accent: yellow
-      toggle: {icon: material/brightness-7, name: light mode}
     - scheme: default
       primary: custom
       accent: indigo
       toggle: {icon: material/brightness-4, name: dark mode}
+    - scheme: slate
+      primary: custom
+      accent: yellow
+      toggle: {icon: material/brightness-7, name: light mode}
   features:
     - navigation.sections
     - content.code.copy
@@ -71,10 +71,10 @@ plugins:
 extra_css:
   - stylesheets/extra.css
 
-# the cross-site theme (?theme= -> cc_theme cookie -> localStorage.theme -> dark) and
+# the cross-site theme (?theme= -> cc_theme cookie -> localStorage cc_theme, when the visitor chose it -> light) and
 # the bridge that keeps it and material's palette toggle agreeing in both directions
 extra_javascript:
-  - https://calcofi.io/brand/v1/theme.js
+  - https://calcofi.io/brand/v2/theme.js
   - javascripts/brand.js
 
 markdown_extensions:
