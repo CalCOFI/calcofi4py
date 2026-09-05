@@ -1,0 +1,91 @@
+{
+  "schema_version": "1.0",
+  "release": {
+    "version": "v2026.09.05", "release_date": "2026-09-05", "doi": null,
+    "concept_doi": "10.5281/zenodo.22281994",
+    "citation": "CalCOFI (2026). CalCOFI Integrated Database, release v2026.09.05 [Data set]. Scripps Institution of Oceanography, NOAA Fisheries, and California Department of Fish and Wildlife. https://calcofi.io/db-schema/?v=v2026.09.05"
+  },
+  "counts": {"datasets": 2, "holdings": 1, "reference": 0},
+  "datasets": [
+    {
+      "dataset_key": "calcofi_dic",
+      "provider": {"key": "calcofi", "short": "CalCOFI", "name": "CalCOFI", "url": "https://calcofi.org"},
+      "dataset": "dic", "dataset_name": "CalCOFI Dissolved Inorganic Carbon Data", "dataset_name_short": "Carbonate Chemistry / DIC",
+      "category": {"name": "Carbonate System", "realm": "env", "icon": "cat-carbonate", "order": 3, "registered": true},
+      "color": "#63e6be", "visibility": "public",
+      "description_md": "Discrete profile dissolved inorganic carbon (DIC) and total alkalinity from CalCOFI Niskin bottle samples.\n",
+      "keywords": ["EARTH SCIENCE > OCEANS > OCEAN CHEMISTRY > CARBON DIOXIDE"],
+      "attribution": {
+        "citation_main": "Wang, X.J. et al. (2021). CalCOFI Dissolved Inorganic Carbon Data. NOAA National Centers for Environmental Information.",
+        "citation_others": [], "doi": "10.25921/3w9f-jd72", "license": "CC-BY-4.0", "license_url": null,
+        "acknowledgement": null, "contact": null, "pi_names": ["Wang, X.J.", "Sutula, M."], "source_accessed": "2026-09-04"
+      },
+      "links": {
+        "calcofi_org": "https://calcofi.org/data/oceanographic-data/carbonate-chemistry/",
+        "data_source": null,
+        "workflow": "https://calcofi.io/workflows/ingest_calcofi_dic.html",
+        "page": "https://calcofi.io/datasets/calcofi_dic/"
+      },
+      "coverage": {
+        "temporal": "2008-01 to 2021-05", "year_min": 2008, "year_max": 2021, "years": [{"year": 2008, "n_obs": 1200, "n_roots": 60}],
+        "spatial": "24.0-38.0N, 125.0-117.0W", "bbox": {"lat_min": 24, "lat_max": 38, "lon_min": -125, "lon_max": -117},
+        "n_obs": 24000, "n_roots": 1200, "n_stations": 66, "n_variables": 4, "n_taxa": 0, "depth_min_m": 0, "depth_max_m": 500,
+        "variables": ["dic", "talk"], "life_stages": []
+      },
+      "tables": ["sample", "obs", "sample_measurement"],
+      "objects": [{"table": "obs", "path": "ducklake/tables/obs/dataset_key=calcofi_dic/abc123/data_0.parquet", "bytes": 1024, "sha256": "abc123", "since": "v2026.06.08"}],
+      "since_version": "v2026.06.08",
+      "distributions": [
+        {"kind": "download", "format": "parquet", "url": "https://storage.googleapis.com/calcofi-db/ducklake/tables/obs/dataset_key=calcofi_dic/abc123/data_0.parquet", "table": "obs", "scope": "partition", "title": "obs (this dataset's rows)", "bytes": 1024, "sha256": "abc123", "since": "v2026.06.08", "status": "current"},
+        {"kind": "service", "format": "erddap", "id": "calcofi_dic", "url": "https://erddap.calcofi.io/erddap/tabledap/calcofi_dic.html", "grain": "observations"}
+      ],
+      "registrations": [
+        {"portal": "erddap", "status": "published", "url": "https://erddap.calcofi.io/erddap/info/calcofi_dic/index.html", "issues": []},
+        {"portal": "obis", "status": "n/a", "issues": []}
+      ],
+      "status": {"stage": "published", "priority": "must-complete", "gh_issue": null, "blockers": null, "questions_open": 0, "updated": "2026-09-04"}
+    },
+    {
+      "dataset_key": "cce-lter_zoodb",
+      "provider": {"key": "cce-lter", "short": "CCE LTER", "name": "California Current Ecosystem LTER", "url": "https://oceaninformatics.ucsd.edu"},
+      "dataset": "zoodb", "dataset_name": "Zooplankton biomass and net sampling data (CCE LTER ZooDB)", "dataset_name_short": "ZooDB (Holoplankton Community)",
+      "category": {"name": "Zooplankton", "realm": "bio", "icon": "cat-zooplankton", "order": 9, "registered": true},
+      "color": "#f783ac", "visibility": "public",
+      "description_md": "Zooplankton displacement volume and taxon-resolved abundance from CalCOFI/CCE-LTER net tows.\n",
+      "keywords": ["EARTH SCIENCE > BIOLOGICAL CLASSIFICATION > ANIMALS/INVERTEBRATES > ZOOPLANKTON"],
+      "attribution": {
+        "citation_main": "CCE LTER (2019). Zooplankton biomass and net sampling data. oceaninformatics.ucsd.edu.",
+        "citation_others": [], "doi": null, "license": "custom", "license_url": "https://oceaninformatics.ucsd.edu/zoodb/terms",
+        "acknowledgement": null, "contact": null, "pi_names": ["CCE LTER"], "source_accessed": "2026-09-04"
+      },
+      "links": {
+        "calcofi_org": "https://calcofi.org/data/marine-ecosystem-data/zooplankton/",
+        "data_source": null,
+        "workflow": "https://calcofi.io/workflows/ingest_cce-lter_zoodb.html",
+        "page": "https://calcofi.io/datasets/cce-lter_zoodb/"
+      },
+      "coverage": {
+        "temporal": "1998-01 to 2021-05", "year_min": 1998, "year_max": 2021, "years": [{"year": 1998, "n_obs": 500, "n_roots": 40}],
+        "spatial": "30.0-36.0N, 124.0-117.0W", "bbox": {"lat_min": 30, "lat_max": 36, "lon_min": -124, "lon_max": -117},
+        "n_obs": 15000, "n_roots": 900, "n_stations": 40, "n_variables": 2, "n_taxa": 210, "depth_min_m": 0, "depth_max_m": 200,
+        "variables": ["biomass", "abundance"], "life_stages": ["adult"]
+      },
+      "tables": ["sample", "obs", "taxon", "dataset_taxon"],
+      "objects": [{"table": "obs", "path": "ducklake/tables/obs/dataset_key=cce-lter_zoodb/def456/data_0.parquet", "bytes": 2048, "sha256": "def456", "since": "v2026.06.08"}],
+      "since_version": "v2026.06.08",
+      "distributions": [
+        {"kind": "download", "format": "parquet", "url": "https://storage.googleapis.com/calcofi-db/ducklake/tables/obs/dataset_key=cce-lter_zoodb/def456/data_0.parquet", "table": "obs", "scope": "partition", "title": "obs (this dataset's rows)", "bytes": 2048, "sha256": "def456", "since": "v2026.06.08", "status": "current"}
+      ],
+      "registrations": [
+        {"portal": "erddap", "status": "n/a", "issues": []},
+        {"portal": "obis", "status": "planned", "issues": ["https://github.com/CalCOFI/workflows/issues/38"]}
+      ],
+      "status": {"stage": "published", "priority": "should-complete", "gh_issue": null, "blockers": null, "questions_open": 1, "updated": "2026-09-04"}
+    }
+  ],
+  "holdings": [
+    {"key": "calcofi_prodo", "name": "Primary Production", "category": {"name": "Productivity & Pigments"}, "provider": {"key": "cce-lter"},
+     "status": "planned", "link": "https://portal.edirepository.org/nis/mapbrowse?scope=knb-lter-cce&identifier=71", "gh_issue": 34}
+  ],
+  "reference": []
+}

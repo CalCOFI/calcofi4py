@@ -7,6 +7,23 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.7.0 (2026-09-05)
+
+- New `cc_datasets(version="latest", what="datasets", base_https=...)` reads a release's
+  `datasets.json` (`calcofi4db::build_dataset_catalog()`, calcofi4db >= 4.1.0) into a list of
+  dicts, one per record — `what="datasets"` (default, the integrated datasets), `"holdings"`
+  (known but not yet in the database) or `"reference"` (cruises, stations, spatial layers).
+  Raises `LookupError` naming the version when a release predates the catalog, rather than
+  returning an empty list.
+- New `cc_dataset_page_url(dataset_key)` — the one place a `https://calcofi.io/datasets/{key}/`
+  URL is built from a key; every consumer that names a dataset should call this instead of
+  hard-coding the pattern.
+- `cc_cite(format="text")` gains a `Page:` line on every entry — the dataset's own catalog page,
+  or `https://calcofi.io/datasets/release/` for the release citation. `format="bibtex"` /
+  `"csl"` are unchanged.
+- Mirrors `calcofi4r::cc_datasets()` / `cc_dataset_page_url()` (calcofi4r 1.19.0) byte-for-byte
+  over the shared fixture `tests/fixtures/datasets_sample.json`.
+
 ## 0.6.0 (2026-09-03)
 
 - `cc_get_db()` creates every **view** a release's `catalog.json` carries (`views`: name → SQL over
