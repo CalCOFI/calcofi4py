@@ -1,0 +1,930 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="CalCOFI Python helpers — public database releases (DuckDB over Parquet) and the CTD team's PostgreSQL working database">
+      
+      
+      
+        <link rel="canonical" href="https://calcofi.io/calcofi4py/">
+      
+      
+      
+        <link rel="next" href="citing/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>calcofi4py v0.7.0</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="stylesheets/extra.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  <script>(function(){var d=document.documentElement,m=/[?&]theme=(dark|light)\b/.exec(location.search),k=/(?:^|;\s*)cc_theme_src=user\b/.test(document.cookie),c=k&&/(?:^|;\s*)cc_theme=(dark|light)\b/.exec(document.cookie),s=null;try{if(localStorage.getItem("cc_theme_src")==="user")s=localStorage.getItem("cc_theme")}catch(e){}var t=(m&&m[1])||(c&&c[1])||(s==="dark"||s==="light"?s:null)||"light";d.dataset.theme=t;d.setAttribute("data-bs-theme",t);d.setAttribute("data-md-color-scheme",t==="dark"?"slate":"default");d.style.colorScheme=t;
+  /* material's palette entries in mkdocs.yml order: 0 = default (light), 1 = slate (dark) */
+  var p={light:{index:0,color:{media:"",scheme:"default",primary:"custom",accent:"indigo"}},dark:{index:1,color:{media:"",scheme:"slate",primary:"custom",accent:"yellow"}}}[t];
+  try{var cur=__md_get("__palette");if(!cur||!cur.color||cur.color.scheme!==p.color.scheme)__md_set("__palette",p)}catch(e){}})();</script>
+  <link rel="preload" href="https://calcofi.io/brand/v2/fonts/SourceSans3-VF.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="https://calcofi.io/brand/v2/fonts.css">
+  <link rel="stylesheet" href="https://calcofi.io/brand/v2/theme.css">
+
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#calcofi4py" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://calcofi.io" title="calcofi4py v0.7.0" class="md-header__button md-logo" aria-label="calcofi4py v0.7.0" data-md-component="logo">
+      
+  <img src="assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            calcofi4py v0.7.0
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Home
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="indigo"  aria-label="dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="yellow"  aria-label="light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/CalCOFI/calcofi4py" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CalCOFI/calcofi4py
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://calcofi.io" title="calcofi4py v0.7.0" class="md-nav__button md-logo" aria-label="calcofi4py v0.7.0" data-md-component="logo">
+      
+  <img src="assets/logo.svg" alt="logo">
+
+    </a>
+    calcofi4py v0.7.0
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/CalCOFI/calcofi4py" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    CalCOFI/calcofi4py
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-public-database-releases-no-account-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The public database releases (no account needed)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-ctd-teams-postgresql-working-database-account-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The CTD team's PostgreSQL working database (account required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The CTD team&#39;s PostgreSQL working database (account required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#both-at-once-release-parquet-postgresql-in-one-duckdb-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Both at once — release Parquet ⋈ PostgreSQL in one DuckDB query
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#walkthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walkthrough
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-inherited-from-calcofi4r-do-not-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conventions inherited from calcofi4r (do not drift)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dev
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="citing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Citing CalCOFI data
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Articles
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Articles
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="articles/ctd-qaqc/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CTD QA/QC, end to end — a read-only walkthrough
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Changelog
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-public-database-releases-no-account-needed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The public database releases (no account needed)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-ctd-teams-postgresql-working-database-account-required" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The CTD team's PostgreSQL working database (account required)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The CTD team&#39;s PostgreSQL working database (account required)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#both-at-once-release-parquet-postgresql-in-one-duckdb-query" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Both at once — release Parquet ⋈ PostgreSQL in one DuckDB query
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#walkthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Walkthrough
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conventions-inherited-from-calcofi4r-do-not-drift" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conventions inherited from calcofi4r (do not drift)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dev
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+    <a href="https://github.com/CalCOFI/calcofi4py/edit/main/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+
+
+<h1 id="calcofi4py">calcofi4py <img src="assets/logo.svg" align="right" width="130" alt="calcofi4py logo"/><a class="headerlink" href="#calcofi4py" title="Permanent link">&para;</a></h1>
+<p>CalCOFI Python helpers — the thin sibling of <a href="https://calcofi.io/calcofi4r">calcofi4r</a>.
+Two data stores, a few verbs, no credentials in code.</p>
+<p><a href="https://github.com/CalCOFI/calcofi4py/blob/main/pyproject.toml"><img alt="version" src="https://img.shields.io/badge/dynamic/toml?url=https%3A%2F%2Fraw.githubusercontent.com%2FCalCOFI%2Fcalcofi4py%2Fmain%2Fpyproject.toml&amp;query=%24.project.version&amp;label=calcofi4py&amp;color=193E6D" /></a> — the version these examples were run against; <code>calcofi4py.__version__</code> tells you yours.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py"</span>
+</code></pre></div>
+<p><code>[viz]</code> adds pandas + plotly, which every example below uses (the CTD helpers return
+DataFrames; the maps and profiles are plotly). Without it you get release access only
+(DuckDB). The extras go <em>inside</em> the quotes with the git URL — a bare
+<code>pip install 'calcofi4py[viz]'</code> only works after the package is already installed.</p>
+<p><strong>Updating and pinning.</strong> The package is not on PyPI, so <code>pip install 'calcofi4py[viz]'</code>
+on an existing install just reports <em>Requirement already satisfied</em> and changes nothing.
+Re-run the git URL — with <code>--upgrade</code> — to move to the latest <code>main</code>, or pin a release tag:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="s2">"calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py"</span><span class="w">           </span><span class="c1"># latest main</span>
+pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="s2">"calcofi4py[viz] @ git+https://github.com/CalCOFI/calcofi4py@v0.3.6"</span><span class="w">    </span><span class="c1"># a release tag</span>
+python<span class="w"> </span>-c<span class="w"> </span><span class="s2">"import calcofi4py as cc; print(cc.__version__)"</span><span class="w">                                    </span><span class="c1"># confirm</span>
+</code></pre></div>
+<p>In RStudio's Python console (rstudio.calcofi.io) the interpreter is embedded once per R
+session: after an upgrade do <em>Session → Restart R</em>, or <code>import</code> keeps returning the old module.</p>
+<h2 id="the-public-database-releases-no-account-needed">The public database releases (no account needed)<a class="headerlink" href="#the-public-database-releases-no-account-needed" title="Permanent link">&para;</a></h2>
+<p>Immutable, versioned Parquet on a public bucket; DuckDB reads only what a query
+touches, straight over HTTPS.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">calcofi4py</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cc</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">__version__</span>                             <span class="c1"># '0.7.0' — confirm before copying the examples below</span>
+
+<span class="n">con</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">cc_get_db</span><span class="p">()</span>                       <span class="c1"># latest release, every table as a view</span>
+<span class="n">con</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">"SHOW TABLES"</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">  SELECT date_trunc('year', s.datetime_utc) AS year, count(*) AS casts</span>
+<span class="s2">  FROM sample s WHERE s.dataset_key = 'calcofi_ctd-cast'</span>
+<span class="s2">  GROUP BY 1 ORDER BY 1</span>
+<span class="s2">"""</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span>
+
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_query</span><span class="p">(</span><span class="s2">"SELECT count(*) FROM obs"</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>      <span class="c1"># one-shot</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_get_db</span><span class="p">(</span><span class="s2">"v2026.08.14"</span><span class="p">)</span>                             <span class="c1"># pin a version (reproducible)</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_get_db</span><span class="p">(</span><span class="n">supplemental</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>                         <span class="c1"># + obs_ctd_full (216M rows), obs_mets_full</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_list_versions</span><span class="p">()[:</span><span class="mi">3</span><span class="p">]</span>
+</code></pre></div>
+<p>To see what's in each table first: the <a href="https://calcofi.io/db-schema/">Schema explorer</a>.
+More: <a href="https://calcofi.io/docs/data-access.html">Data Access</a>.</p>
+<h2 id="the-ctd-teams-postgresql-working-database-account-required">The CTD team's PostgreSQL working database (account required)<a class="headerlink" href="#the-ctd-teams-postgresql-working-database-account-required" title="Permanent link">&para;</a></h2>
+<p>Private, multi-user, reached over SSH — see
+<a href="https://calcofi.io/docs/server-access.html">Server Access</a> for the account,
+the <code>~/.ssh/config</code> alias <code>calcofi</code>, and the <code>~/.pgpass</code> file (your password
+lives there and in no script, ever).</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">calcofi4py</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cc</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">__version__</span>                             <span class="c1"># '0.7.0' — cc_withdraw_flags() needs &gt;= 0.3.5</span>
+
+<span class="n">con</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">cc_pg_connect</span><span class="p">(</span><span class="n">tunnel</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>        <span class="c1"># opens `ssh -N calcofi` for you; ~/.pgpass auth</span>
+<span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="s2">"SELECT count(*) FROM ctd.cast WHERE is_best_stage"</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+
+<span class="n">casts</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">cc_ctd_casts</span><span class="p">(</span><span class="n">con</span><span class="p">,</span> <span class="s2">"2304SH"</span><span class="p">)</span>                                  <span class="c1"># one row per cast (best stage)</span>
+<span class="n">scans</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">cc_ctd_scans</span><span class="p">(</span><span class="n">con</span><span class="p">,</span> <span class="s2">"2304SH"</span><span class="p">,</span> <span class="n">cast_id</span><span class="o">=</span><span class="s2">"2304_001d"</span><span class="p">,</span>
+                        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">"temp1"</span><span class="p">,</span> <span class="s2">"temp2"</span><span class="p">])</span>                     <span class="c1"># this cast: 40 scans, 3–42 m, 1 m bins</span>
+
+<span class="c1"># propose a QC flag — look first, write second, and you can still undo</span>
+<span class="n">where</span><span class="p">,</span> <span class="n">args</span> <span class="o">=</span> <span class="s2">"study = </span><span class="si">%s</span><span class="s2"> AND cast_id = </span><span class="si">%s</span><span class="s2"> AND depth = </span><span class="si">%s</span><span class="s2">"</span><span class="p">,</span> <span class="p">(</span><span class="s2">"2304SH"</span><span class="p">,</span> <span class="s2">"2304_001d"</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+
+<span class="n">hit</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">"SELECT scan_id, depth, temp1, temp2 FROM ctd.v_scan_best WHERE </span><span class="si">{</span><span class="n">where</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">fetchall</span><span class="p">()</span>
+<span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">hit</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="n">hit</span>             <span class="c1"># [] = your WHERE matches nothing, and the INSERT below would flag nothing, silently</span>
+
+<span class="p">(</span><span class="n">flag_id</span><span class="p">,)</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">execute</span><span class="p">(</span><span class="sa">f</span><span class="s2">"""</span>
+<span class="s2">  INSERT INTO ctd.flag (scan_id, variable, qual_code, reason)</span>
+<span class="s2">  SELECT scan_id, 'temp1', 3, 'README example (withdrawn right after)'</span>
+<span class="s2">  FROM ctd.v_scan_best WHERE </span><span class="si">{</span><span class="n">where</span><span class="si">}</span>
+<span class="s2">  RETURNING flag_id</span>
+<span class="s2">"""</span><span class="p">,</span> <span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">fetchone</span><span class="p">()</span>
+<span class="n">con</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>                          <span class="c1"># con.rollback() instead discards it before anyone sees it</span>
+
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_flags</span><span class="p">(</span><span class="n">con</span><span class="p">,</span> <span class="s2">"2304SH"</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="s2">"proposed"</span><span class="p">)</span>     <span class="c1"># the ledger: who proposed what, and its fate</span>
+
+<span class="c1"># undo: the ledger is append-only, so undo = withdraw your own proposal (the audit trail keeps it);</span>
+<span class="c1"># curators accept/reject everything else in pgAdmin or SQL</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_withdraw_flags</span><span class="p">(</span><span class="n">con</span><span class="p">,</span> <span class="p">[</span><span class="n">flag_id</span><span class="p">],</span> <span class="n">note</span><span class="o">=</span><span class="s2">"README example"</span><span class="p">)</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_pg_tunnel_close</span><span class="p">()</span>
+</code></pre></div>
+<h3 id="both-at-once-release-parquet-postgresql-in-one-duckdb-query">Both at once — release Parquet ⋈ PostgreSQL in one DuckDB query<a class="headerlink" href="#both-at-once-release-parquet-postgresql-in-one-duckdb-query" title="Permanent link">&para;</a></h3>
+<p>The two stores answer different questions. The <strong>public release</strong> is what everyone
+sees: immutable, versioned Parquet with every CalCOFI dataset integrated on shared
+keys. The <strong>PostgreSQL database</strong> is the CTD team's working state: the raw cast
+archive and the flag ledger, changing daily as people propose and review. They share
+<code>cruise_key</code> (<code>YYYY-MM-NODC</code>, e.g. <code>2026-07-3322</code>), so a question that spans them —
+<em>which cruises are we still flagging, and what does the public release already
+publish for those cruises?</em> — is one join away.</p>
+<p>DuckDB is the bridge. <code>cc_get_db()</code> registers the release tables as views over the
+Parquet (called by their bare names: <code>sample</code>, <code>cruise</code>, …); <code>cc_pg_attach()</code> then
+ATTACHes PostgreSQL as a second catalog named <code>pg</code> (DuckDB's <code>postgres</code> extension
+talks libpq through your SSH tunnel and reads <code>~/.pgpass</code>; read-only by default), so
+its tables are <code>pg.&lt;schema&gt;.&lt;table&gt;</code>. From there it is ordinary SQL — DuckDB plans
+across both sources and hands back one DataFrame.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">calcofi4py</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">cc</span>
+
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_pg_tunnel</span><span class="p">()</span>                                 <span class="c1"># SSH tunnel up (cc_pg_connect(tunnel=True) does the same)</span>
+<span class="n">con</span> <span class="o">=</span> <span class="n">cc</span><span class="o">.</span><span class="n">cc_get_db</span><span class="p">(</span><span class="n">tables</span><span class="o">=</span><span class="p">[</span><span class="s2">"sample"</span><span class="p">,</span> <span class="s2">"cruise"</span><span class="p">])</span>   <span class="c1"># DuckDB with the release tables as views</span>
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_pg_attach</span><span class="p">(</span><span class="n">con</span><span class="p">)</span>                              <span class="c1"># + PostgreSQL attached as catalog `pg` (pg.ctd.*, pg.work.*)</span>
+<span class="n">con</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">"SHOW ALL TABLES"</span><span class="p">)</span>                        <span class="c1"># both catalogs, side by side</span>
+
+<span class="n">qc_vs_release</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">"""</span>
+<span class="s2">  WITH qc AS (                                    -- PostgreSQL side: the team's working state</span>
+<span class="s2">    SELECT fi.cruise_key, fi.study,</span>
+<span class="s2">           count(*) FILTER (WHERE f.status = 'proposed') AS flags_proposed,</span>
+<span class="s2">           count(*) FILTER (WHERE f.status = 'accepted') AS flags_accepted</span>
+<span class="s2">    FROM pg.ctd.flag f</span>
+<span class="s2">    JOIN pg.ctd.file fi USING (file_id)           -- a flag sits on a scan/file; the file knows its cruise</span>
+<span class="s2">    GROUP BY 1, 2)</span>
+<span class="s2">  SELECT qc.study, qc.cruise_key, qc.flags_proposed, qc.flags_accepted,</span>
+<span class="s2">         count(s.sample_key) AS casts_in_release  -- release side: what the public sees today</span>
+<span class="s2">  FROM qc</span>
+<span class="s2">  LEFT JOIN sample s                              -- `sample` = the release view (no prefix)</span>
+<span class="s2">         ON s.cruise_key = qc.cruise_key AND s.dataset_key = 'calcofi_ctd-cast'</span>
+<span class="s2">  GROUP BY ALL</span>
+<span class="s2">  ORDER BY qc.cruise_key DESC</span>
+<span class="s2">"""</span><span class="p">)</span><span class="o">.</span><span class="n">df</span><span class="p">()</span>
+<span class="c1">#  study   cruise_key  flags_proposed  flags_accepted  casts_in_release</span>
+<span class="c1"># 2607SH 2026-07-3322             574               0               122    &lt;- being cleaned; already public</span>
+<span class="c1"># 2304SH 2023-04-3322               0               0               226    &lt;- its 3 flags were withdrawn</span>
+
+<span class="n">cc</span><span class="o">.</span><span class="n">cc_pg_tunnel_close</span><span class="p">()</span>
+</code></pre></div>
+<p>Writes go the other way too: <code>cc_pg_attach(con, read_only=False)</code> lets a
+<code>CREATE TABLE pg.work.my_subset AS SELECT … FROM sample WHERE …</code> land release rows in
+your PostgreSQL schema for the team to work on.</p>
+<h2 id="walkthrough">Walkthrough<a class="headerlink" href="#walkthrough" title="Permanent link">&para;</a></h2>
+<p><a href="https://calcofi.io/calcofi4py/articles/ctd-qaqc/">CTD QA/QC, end to end</a> — the
+helpers working together on one cruise × one variable, read-only: casts → map → QC rules
+→ triage → ledger → clean 1 m bins → a cross-store query, ending with the session info
+that makes the page a reproducible record. Pre-rendered by someone with an account
+(<code>scripts/render_articles.sh</code>); the site build holds no credentials.</p>
+<h2 id="conventions-inherited-from-calcofi4r-do-not-drift">Conventions inherited from calcofi4r (do not drift)<a class="headerlink" href="#conventions-inherited-from-calcofi4r-do-not-drift" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Secrets only in <code>~/.pgpass</code> / <code>%APPDATA%\postgresql\pgpass.conf</code>; never a
+  password argument in examples.</li>
+<li><code>PGHOST</code> / <code>PGPORT</code> / <code>PGUSER</code> override every default; on the CalCOFI server
+  the host defaults to <code>postgis</code> (no tunnel), elsewhere <code>localhost</code>.</li>
+<li>Release access follows <code>catalog.json</code> exactly: <code>partitioned</code> tables are
+  s3-glob views with <code>hive_partitioning</code>, <code>supplemental</code> tables opt-in.</li>
+</ul>
+<h2 id="dev">Dev<a class="headerlink" href="#dev" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span><span class="s2">".[dev]"</span>
+pytest<span class="w"> </span>-q<span class="w">                       </span><span class="c1"># pure-logic + (if online) release tests</span>
+<span class="nv">CALCOFI_PG_TEST</span><span class="o">=</span><span class="m">1</span><span class="w"> </span>pytest<span class="w"> </span>-q<span class="w">     </span><span class="c1"># + live PostgreSQL tests (tunnel + ~/.pgpass)</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/CalCOFI" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://calcofi.io" target="_blank" rel="noopener" title="calcofi.io" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M16.36 14c.08-.66.14-1.32.14-2s-.06-1.34-.14-2h3.38c.16.64.26 1.31.26 2s-.1 1.36-.26 2m-5.15 5.56c.6-1.11 1.06-2.31 1.38-3.56h2.95a8.03 8.03 0 0 1-4.33 3.56M14.34 14H9.66c-.1-.66-.16-1.32-.16-2s.06-1.35.16-2h4.68c.09.65.16 1.32.16 2s-.07 1.34-.16 2M12 19.96c-.83-1.2-1.5-2.53-1.91-3.96h3.82c-.41 1.43-1.08 2.76-1.91 3.96M8 8H5.08A7.92 7.92 0 0 1 9.4 4.44C8.8 5.55 8.35 6.75 8 8m-2.92 8H8c.35 1.25.8 2.45 1.4 3.56A8 8 0 0 1 5.08 16m-.82-2C4.1 13.36 4 12.69 4 12s.1-1.36.26-2h3.38c-.08.66-.14 1.32-.14 2s.06 1.34.14 2M12 4.03c.83 1.2 1.5 2.54 1.91 3.97h-3.82c.41-1.43 1.08-2.77 1.91-3.97M18.92 8h-2.95a15.7 15.7 0 0 0-1.38-3.56c1.84.63 3.37 1.9 4.33 3.56M12 2C6.47 2 2 6.5 2 12a10 10 0 0 0 10 10 10 10 0 0 0 10-10A10 10 0 0 0 12 2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.sections", "content.code.copy", "content.action.edit"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+        <script src="https://calcofi.io/brand/v2/theme.js"></script>
+      
+        <script src="javascripts/brand.js"></script>
+      
+    
+  </body>
+</html>

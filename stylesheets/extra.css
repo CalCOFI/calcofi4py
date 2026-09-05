@@ -1,0 +1,17 @@
+/* API reference: functions are subordinate to their section headings —
+   indent the whole mkdocstrings object block and shrink its heading, so a
+   scanning eye sees two levels, not one flat list. */
+.md-typeset .doc-object {
+  margin-left: 1rem;
+  padding-left: 1rem;
+  border-left: 2px solid var(--md-default-fg-color--lightest);
+}
+.md-typeset h3.doc-heading {
+  font-size: 1.05em;
+  font-weight: 600;
+  margin-top: 1.2em;
+}
+.md-typeset h3.doc-heading code { font-size: .95em; }
+/* the calcofi4r-family navy header regardless of scheme */
+[data-md-color-primary=custom] .md-header,
+[data-md-color-primary=custom] .md-tabs { background-color: #193E6D; }
