@@ -132,6 +132,7 @@ def test_pre_a0_catalog_falls_back_to_computed_release_wording(monkeypatch):
         "CalCOFI (2026). CalCOFI Integrated Database, release v2026.08.14 [Data set]. "
         "Scripps Institution of Oceanography, NOAA Fisheries, and California Department of "
         "Fish and Wildlife. https://calcofi.io/db-schema/?v=v2026.08.14"
+        "\nPage: https://calcofi.io/datasets/release/"
     )
     assert len(out) == 1
 
@@ -194,12 +195,14 @@ def test_pre_contract_dataset_table_cites_without_doi_license_url_acknowledgemen
     # table cannot supply (no DOI: / Acknowledgement: line, no URL after `custom`)
     txt = cc_cite(con=con, version="v2026.09.03")
     assert len(txt) == 4
-    assert txt[0] == _catalog()["citation"]
+    assert txt[0] == _catalog()["citation"] + "\nPage: https://calcofi.io/datasets/release/"
     assert txt.source == "release"
     assert txt[1] == ("Wang, X.J. et al. (2021). CalCOFI Dissolved Inorganic Carbon Data. "
-                      "NOAA National Centers for Environmental Information.\nLicense: CC-BY-4.0")
+                      "NOAA National Centers for Environmental Information.\nLicense: CC-BY-4.0"
+                      "\nPage: https://calcofi.io/datasets/calcofi_dic/")
     assert txt[2] == ("CCE LTER (2019). Zooplankton biomass and net sampling data. "
-                      "oceaninformatics.ucsd.edu.\nLicense: custom")
+                      "oceaninformatics.ucsd.edu.\nLicense: custom"
+                      "\nPage: https://calcofi.io/datasets/cce-lter_zoodb/")
     assert not any(("DOI: " in t) or ("Acknowledgement: " in t) or ("License: custom (" in t) for t in txt)
 
     # bibtex: the dataset entries carry no doi / url field (the release entry keeps its DOI)

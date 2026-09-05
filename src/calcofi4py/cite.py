@@ -20,6 +20,7 @@ import urllib.request
 
 import duckdb
 
+from .catalog import cc_dataset_page_url
 from .release import cc_catalog, cc_get_db, cc_resolve_version
 
 # The release-citation wording, mirrored from calcofi4db::release_citation()
@@ -64,6 +65,9 @@ def _release_fields(catalog: dict) -> dict:
     year = rd[:4] if rd else version[1:5]
     locator = f"https://doi.org/{doi}" if doi else f"{_DB_SCHEMA_URL}?v={version}"
     citation = catalog["citation"] if has_cit else _release_computed(version, catalog.get("release_date"), doi)
+    # the record's own page for the release (plan 2026-09-05 D-4); appended to the
+    # citation text only, so bibtex/csl (which do not use "citation") are unaffected
+    citation = citation + "\nPage: https://calcofi.io/datasets/release/"
     return {
         "id": "calcofi_release_" + re.sub(r"[^A-Za-z0-9]+", "_", version),
         "citation": citation,
@@ -157,7 +161,8 @@ def _year(citation_main: str) -> str | None:
 def _text_one(row: dict) -> str:
     cit = _s0(row.get("citation_main"))
     first = cit if cit else f"{row.get('dataset_name') or row['dataset_key']} [dataset]."
-    lines = [first, _license_line(row), _doi_line(row), _ack_line(row)]
+    page = f"Page: {cc_dataset_page_url(row['dataset_key'])}"
+    lines = [first, _license_line(row), _doi_line(row), _ack_line(row), page]
     return "\n".join(line for line in lines if line)
 
 
@@ -279,9 +284,12 @@ def cc_cite(
 
     Each dataset entry always carries its ``citation_main``; ``format="text"`` appends a
     ``License: <id>`` line (plus the URL, for a ``custom`` license), a ``DOI:`` line when the
-    dataset has one, and an ``Acknowledgement:`` line when the source requires one.
-    ``format="bibtex"`` and ``format="csl"`` fold license and acknowledgement into one
-    ``note``/``note`` field instead, since neither format has a natural place for more than one.
+    dataset has one, an ``Acknowledgement:`` line when the source requires one, and (2026-09-05)
+    always a ``Page:`` line linking ``https://calcofi.io/datasets/{dataset_key}/`` — the
+    dataset-catalog record's own page (:func:`cc_datasets`); the release citation gets the same
+    line for ``https://calcofi.io/datasets/release/``. ``format="bibtex"`` and ``format="csl"``
+    fold license and acknowledgement into one ``note``/``note`` field instead, since neither
+    format has a natural place for more than one, and do not carry the page line.
 
     ``format="bibtex"`` builds every ``@misc{...}`` entry **offline**, from the fields already on
     ``dataset`` and in the catalog — nothing here calls the network by default. ``resolve=True``

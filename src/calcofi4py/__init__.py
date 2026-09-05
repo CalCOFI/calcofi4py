@@ -26,6 +26,7 @@ from datetime import date as _date
 
 from .session import cc_session_info
 from .cite import cc_cite
+from .catalog import cc_datasets, cc_dataset_page_url
 from .release import (
     QUAL_EXCLUDE,
     RetiredVersionError,
@@ -74,6 +75,8 @@ __all__ = [
     "cc_bin_1m",
     "cc_catalog",
     "cc_cite",
+    "cc_datasets",
+    "cc_dataset_page_url",
     "cc_ctd_casts",
     "cc_ctd_scans",
     "cc_flag_summary",
@@ -108,7 +111,7 @@ __all__ = [
     "view_sql",
     "view_tables",
 ]
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 # software citation (the package, not the data — cc_cite() is for the data; mirrors R's
 # `citation("calcofi4r")`, which reads DESCRIPTION's Authors@R)
