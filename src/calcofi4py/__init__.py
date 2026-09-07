@@ -27,6 +27,7 @@ from datetime import date as _date
 from .session import cc_session_info
 from .cite import cc_cite
 from .catalog import cc_datasets, cc_dataset_page_url
+from .interpolate import interpolate, Surface
 from .release import (
     QUAL_EXCLUDE,
     RetiredVersionError,
@@ -71,6 +72,8 @@ from .postgres import (
 )
 
 __all__ = [
+    "interpolate",
+    "Surface",
     "QUAL_EXCLUDE",
     "cc_bin_1m",
     "cc_catalog",

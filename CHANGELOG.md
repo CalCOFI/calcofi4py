@@ -7,6 +7,18 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+
+## 0.8.0
+
+- New `interpolate(points, method="ok", cell_deg=0.06, mask_km=60, se=True)` — the **same algorithm as
+  `calcofi.io/explore`'s Contours lens** (and `calcofi4r::cc_interpolate()`), so a surface made in Python
+  matches the map cell for cell: ordinary kriging with a fitted exponential variogram and the kriging SD
+  as its error, inverse-distance weighting (the superseded Contour Explorer's parameters, no error), or a
+  thin-plate spline with GCV smoothing and its standard error; a grid whose rows are evenly spaced in
+  Web-Mercator y (`Surface.extent_3857` frames it as a raster), blank beyond `mask_km` of every point; the
+  leave-one-out RMSE and the fit in `.fit`. Needs numpy (`pip install "calcofi4py[interp]"`). Pinned by the
+  shared fixture `tests/fixtures/contour_fixture.json`, written by the browser's own code.
+
 ## 0.7.0 (2026-09-05)
 
 - New `cc_datasets(version="latest", what="datasets", base_https=...)` reads a release's
