@@ -26,10 +26,12 @@ def test_grid_matches_the_browser():
     assert np.array_equal(np.isnan(s.values), np.isnan(as_arr(FX["methods"]["idw"]["values"], g)))
 
 
-@pytest.mark.parametrize("method", ["idw", "ok", "tps"])
-def test_surface_matches_the_browser_cell_for_cell(method):
-    f = FX["methods"][method]
-    s = interpolate(FX["points"], method, cell_deg=FX["params"]["cellDeg"], mask_km=FX["params"]["maskKm"], se=True)
+@pytest.mark.parametrize("key", list(FX["methods"]))
+def test_surface_matches_the_browser_cell_for_cell(key):
+    f = FX["methods"][key]
+    method = f["method"]
+    s = interpolate(FX["points"], method, cell_deg=FX["params"]["cellDeg"], mask_km=FX["params"]["maskKm"], se=True, nmax=f["nmax"])
+    assert s.fit.nmax == f["nmax"]
     assert (s.fit.n, s.fit.n_cells) == (f["fit"]["n"], f["fit"]["nCells"])
     assert s.fit.loo == pytest.approx(f["fit"]["loo"], abs=1e-5)
     np.testing.assert_allclose(s.values, as_arr(f["values"], FX["grid"]), atol=1e-5, equal_nan=True)  # the fixture is rounded to 6 dp
@@ -52,6 +54,10 @@ def test_mask_and_inputs():
         interpolate(FX["points"][:3], "ok")
     with pytest.raises(ValueError):
         interpolate(FX["points"], "gam")  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        interpolate(FX["points"], "tps", nmax=8)
+    from calcofi4py.interpolate import lcg_sample
+    assert lcg_sample(100, 30, 2)[:5] == [23, 46, 20, 74, 72]  # the browser's draw (0-based; R reads it 1-based)
     pd = pytest.importorskip("pandas")
     s2 = interpolate(pd.DataFrame(FX["points"]), "idw", cell_deg=0.25)
     np.testing.assert_allclose(s2.values, interpolate(FX["points"], "idw", cell_deg=0.25).values, equal_nan=True)

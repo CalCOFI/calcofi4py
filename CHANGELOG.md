@@ -8,6 +8,15 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
 
+
+## 0.9.0
+
+- `interpolate(nmax=0)` — `nmax > 0` (the Explorer's *every site* grain uses 24) fits the `nmax` nearest points
+  within `3 * mask_km` per cell instead of one global system: one small solve each, which returns the value and
+  its error together; the variogram then fits on at most 2,000 points and the leave-one-out error runs on at most
+  500, both drawn by `lcg_sample()`, a seeded generator shared byte-for-byte with the browser and `calcofi4r`.
+  `Fit` carries `nmax`, `n_loo` and `n_fit`. Not for `"tps"`. The shared fixture gained the two local cases.
+
 ## 0.8.0
 
 - New `interpolate(points, method="ok", cell_deg=0.06, mask_km=60, se=True)` — the **same algorithm as

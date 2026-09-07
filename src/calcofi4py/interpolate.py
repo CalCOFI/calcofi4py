@@ -47,6 +47,9 @@ class Fit:
     n: int
     n_cells: int
     loo: float
+    nmax: int = 0
+    n_loo: int | None = None
+    n_fit: int | None = None
     vg: dict | None = None
     edf: float | None = None
 
@@ -63,6 +66,29 @@ class Surface:
     extent_3857: tuple[float, float, float, float] = field(default=(0.0, 0.0, 0.0, 0.0))
 
 
+def lcg_sample(n: int, k: int, seed: int) -> list[int]:
+    """k of n indices without replacement by a partial Fisher–Yates on a seeded LCG (Numerical Recipes) —
+    the SAME draws as the browser's worker and calcofi4r, so a subsample is the same subsample everywhere."""
+    idx = list(range(n))
+    if k >= n:
+        return idx
+    s = seed & 0xFFFFFFFF
+    for i in range(k):
+        s = (s * 1664525 + 1013904223) & 0xFFFFFFFF
+        j = i + int(s / 4294967296 * (n - i))
+        idx[i], idx[j] = idx[j], idx[i]
+    return idx[:k]
+
+
+def _nearest(np, d2, k, lim2=None):
+    """the k nearest (squared distances) within lim2, ties by index — what the worker's bucket search returns"""
+    if lim2 is None:
+        lim2 = np.inf
+    k = min(k, len(d2))
+    o = np.lexsort((np.arange(len(d2)), d2))[:k]
+    return o[d2[o] <= lim2]
+
+
 def _merc(np, lat):
     return np.log(np.tan(np.pi / 4 + lat * np.pi / 360))
 
@@ -73,6 +99,11 @@ def _imerc(np, y):
 
 def _variogram(np, X, Y, Z):
     """the empirical semivariogram (15 bins to half the max distance) and an exponential model by WLS"""
+    n_fit = len(X)
+    if len(X) > 2000:
+        pick = lcg_sample(len(X), 2000, 1)
+        X, Y, Z = X[pick], Y[pick], Z[pick]
+        n_fit = 2000
     n = len(X)
     nb = 15
     iu, ju = np.triu_indices(n, 1)
@@ -99,7 +130,7 @@ def _variogram(np, X, Y, Z):
                 ss = float(np.sum(ne * (ge - m) ** 2 / (m * m)))
                 if ss < best[0]:
                     best = (ss, c0, c1, a)
-    return {"nugget": best[1], "psill": best[2], "range": best[3]}
+    return {"nugget": best[1], "psill": best[2], "range": best[3]}, n_fit
 
 
 def interpolate(
@@ -108,6 +139,7 @@ def interpolate(
     cell_deg: float = 0.06,
     mask_km: float = 60.0,
     se: bool = True,
+    nmax: int = 0,
 ) -> Surface:
     """Interpolate point values to a surface, exactly as the Explorer's Contours lens does.
 
@@ -120,7 +152,11 @@ def interpolate(
     DataFrame's ``to_dict("records")``, or a DataFrame itself), or an ``(n, 3)`` sequence. Rows with a
     missing value are dropped. ``method``: ``"ok"`` (default; the kriging SD is the error surface),
     ``"idw"`` (no error surface) or ``"tps"`` (its standard error is the error surface). ``se=False``
-    skips the error surface, the slow part.
+    skips the error surface, the slow part in the global mode. ``nmax=0`` (the station grid) puts every
+    point in one system; ``nmax > 0`` (the cast grain; the Explorer uses 32) takes the ``nmax`` nearest
+    points per cell — one small solve each, which gives the value and its error together — with the
+    variogram fitted on at most 2,000 points and the leave-one-out error on at most 500, both drawn by a
+    seeded generator shared with the browser; a neighbour is never farther than ``3 * mask_km``. Not for ``"tps"``.
     """
     np = _np()
     if hasattr(points, "to_dict"):  # a pandas DataFrame
@@ -133,6 +169,9 @@ def interpolate(
         raise ValueError("interpolate() needs at least 4 points")
     if method not in ("ok", "idw", "tps"):
         raise ValueError(f"method must be ok, idw or tps, not {method!r}")
+    local = nmax > 0 and nmax < n
+    if local and method == "tps":
+        raise ValueError("the spline needs every point in one system: use nmax=0 (the station grid), or kriging / IDW at the cast grain")
     lon, lat, z = P[:, 0], P[:, 1], P[:, 2]
     R = np.pi / 180
     # the grid: rows evenly spaced in Web-Mercator y, so the bitmap the map stretches between the bounds is exact
@@ -151,44 +190,103 @@ def interpolate(
     cy = (_imerc(np, yN - (np.arange(ny) + 0.5) * s) - latc) * ky     # y per row, north first
     values = np.full((ny, nx), np.nan)
     se_m = np.full((ny, nx), np.nan) if (se and method != "idw") else None
-    fit = Fit(n=n, n_cells=0, loo=float("nan"))
+    fit = Fit(n=n, n_cells=0, loo=float("nan"), nmax=int(nmax) if local else 0)
     r2 = mask_km * mask_km
+    lim2 = (3 * mask_km) ** 2
 
     def d2_row(j):
         return (cx[:, None] - X[None, :]) ** 2 + (cy[j] - Y[None, :]) ** 2
 
     if method == "idw":
         power, rad2, sm2 = 1.3, 200.0 ** 2, 5.0 ** 2
+
+        def idw1(d2, skip=-1):  # one cell: every point (global) or the nmax nearest (local), within the radius
+            if skip >= 0:
+                d2 = d2.copy()
+                d2[skip] = np.inf
+            zz = z
+            if local:
+                k = _nearest(np, d2, nmax, lim2)
+                d2, zz = d2[k], z[k]
+            w = (d2 + sm2) ** (-power / 2)
+            w[d2 > rad2] = 0
+            sw = w.sum()
+            return float(w @ zz / sw) if sw > 0 else np.nan
+
         for j in range(ny):
             d2 = d2_row(j)
             msk = (d2 <= r2).any(axis=1)
             if not msk.any():
                 continue
-            w = (d2 + sm2) ** (-power / 2)
-            w[d2 > rad2] = 0
-            sw = w.sum(axis=1)
-            with np.errstate(invalid="ignore", divide="ignore"):
-                v = (w @ z) / sw
-            v[sw == 0] = np.nan
-            values[j, msk] = v[msk]
+            if local:
+                for i in np.flatnonzero(msk):
+                    values[j, i] = idw1(d2[i])
+            else:
+                w = (d2 + sm2) ** (-power / 2)
+                w[d2 > rad2] = 0
+                sw = w.sum(axis=1)
+                with np.errstate(invalid="ignore", divide="ignore"):
+                    v = (w @ z) / sw
+                v[sw == 0] = np.nan
+                values[j, msk] = v[msk]
             fit.n_cells += int(msk.sum())
-        Dp = (X[:, None] - X[None, :]) ** 2 + (Y[:, None] - Y[None, :]) ** 2
-        w = (Dp + sm2) ** (-power / 2)
-        np.fill_diagonal(w, 0)
-        fit.loo = float(np.sqrt(np.mean(((w @ z) / w.sum(axis=1) - z) ** 2)))
+        pick = lcg_sample(n, 500, 2)
+        e = np.array([idw1((X - X[i]) ** 2 + (Y - Y[i]) ** 2, i) - z[i] for i in pick])
+        fit.loo = float(np.sqrt(np.mean(e[np.isfinite(e)] ** 2)))
+        fit.n_loo = len(pick)
     elif method == "ok":
-        vg = _variogram(np, X, Y, z)
+        vg, fit.n_fit = _variogram(np, X, Y, z)
         fit.vg = vg
-        m = n + 1
         cov = lambda d: vg["psill"] * np.exp(-d / vg["range"])  # noqa: E731
+        dg = vg["psill"] + vg["nugget"] + 1e-6 * vg["psill"]
+        if local:
+            # one (c+1)-system per cell: the weights, the value and the variance together
+            def krige1(d2, skip=-1):
+                if skip >= 0:
+                    d2 = d2.copy()
+                    d2[skip] = np.inf
+                k = _nearest(np, d2, nmax, lim2)
+                k = k[np.isfinite(d2[k])]
+                c = len(k)
+                if c < 2:
+                    return np.nan, np.nan
+                K = np.ones((c + 1, c + 1))
+                K[:c, :c] = cov(np.hypot(X[k][:, None] - X[k][None, :], Y[k][:, None] - Y[k][None, :]))
+                K[np.arange(c), np.arange(c)] = dg
+                K[c, c] = 0
+                kv = np.append(cov(np.sqrt(d2[k])), 1.0)
+                lam = np.linalg.solve(K, kv)
+                return float(lam[:c] @ z[k]), float(np.sqrt(max(0.0, vg["psill"] + vg["nugget"] - lam @ kv)))
+
+            if se_m is None:
+                se_m = np.full((ny, nx), np.nan)  # the local solve gives it anyway
+            for j in range(ny):
+                d2 = d2_row(j)
+                msk = (d2 <= r2).any(axis=1)
+                if not msk.any():
+                    continue
+                for i in np.flatnonzero(msk):
+                    values[j, i], se_m[j, i] = krige1(d2[i])
+                fit.n_cells += int(msk.sum())
+            if not se:
+                se_m = None
+            pick = lcg_sample(n, 500, 2)
+            e = np.array([krige1((X - X[i]) ** 2 + (Y - Y[i]) ** 2, i)[0] - z[i] for i in pick])
+            fit.loo = float(np.sqrt(np.mean(e[np.isfinite(e)] ** 2)))
+            fit.n_loo = len(pick)
+            Rm = 6378137.0
+            ext = (grid.lon0 * R * Rm, grid.lon1 * R * Rm, float(_merc(np, grid.lat_s)) * Rm, float(_merc(np, grid.lat_n)) * Rm)
+            return Surface(grid=grid, values=values, se=se_m, fit=fit, method=method, extent_3857=ext)
+        m = n + 1
         Dp = np.hypot(X[:, None] - X[None, :], Y[:, None] - Y[None, :])
         K = np.ones((m, m))
         K[:n, :n] = cov(Dp)
-        K[np.arange(n), np.arange(n)] = vg["psill"] + vg["nugget"] + 1e-6 * vg["psill"]
+        K[np.arange(n), np.arange(n)] = dg
         K[n, n] = 0
         Ki = np.linalg.inv(K)
         wz = Ki[:, :n] @ z
         fit.loo = float(np.sqrt(np.mean((wz[:n] / np.diag(Ki)[:n]) ** 2)))
+        fit.n_loo = n
         for j in range(ny):
             d2 = d2_row(j)
             msk = (d2 <= r2).any(axis=1)
@@ -232,6 +330,7 @@ def interpolate(
             if best is None or gcv < best[0]:
                 best = (gcv, lam, c, Ki, float(np.sqrt(sse / n)), tr, rss)
         _, lam, c, Ki, fit.loo, fit.edf, rss = best
+        fit.n_loo = n
         sigma2 = rss / max(1, n - fit.edf)
         for j in range(ny):
             d2 = d2_row(j)
