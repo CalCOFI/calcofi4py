@@ -7,6 +7,16 @@ conventions (`cc_*` names, `~/.pgpass` for secrets, `PGHOST`/`PGPORT`/`PGUSER` o
 Docs are a "Python pkgdown": mkdocs-material + mkdocstrings → gh-pages →
 https://calcofi.io/calcofi4py/.
 
+## The README is a test — `tests/test_readme.py`
+
+Every `python` block of `README.md` is executed by pytest: release blocks against the promoted
+release (online), PostgreSQL blocks under `CALCOFI_PG_TEST=1`. Each block runs in its own
+namespace, so a block must stand alone as a reader would paste it. The database release
+pipeline (`../workflows/test_release.qmd`) runs this file against the release it is about to
+promote, with `CALCOFI_RELEASE_VERSION` (+ `CALCOFI_RELEASE_PREFIX` on a staging run) pointing
+`"latest"` there; a README that stops running blocks the release. Before 2026-09-09 nothing ran
+the README and its first example named a column (`datetime_utc`) the release never had.
+
 ## Commands
 
 ```bash
@@ -25,10 +35,12 @@ wrong server.
 ## Releasing — the server copy is part of the release
 
 1. Bump the version in `pyproject.toml`, `src/calcofi4py/__init__.py`, **the
-   `cc.__version__  # '<ver>'` lines that open the README / docs examples, and
+   `cc.__version__  # '<ver>'` lines that open the README examples, and
    `CHANGELOG.md`** — a new `## X.Y.Z (YYYY-MM-DD)` section at the top, today's date, one
    bullet per user-facing change (see *Changelog* below). `tests/test_docs.py` fails if any
-   of the four disagree. The site header shows the installed version automatically
+   of the four disagree — **run `pytest -q` before committing the bump**: 0.8.0 and 0.9.0
+   shipped with `__version__` still `0.7.0` because nobody did. The docs Home page is the
+   README itself (`hooks/readme.py`); there is no `docs/index.md` to keep in step. The site header shows the installed version automatically
    (`hooks/version.py` reads the *installed* metadata — `pip install -e .` again after a
    bump or it keeps showing the old one); nothing else is hand-maintained.
 2. **Re-render the articles through the tunnel, every bump:**

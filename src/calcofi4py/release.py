@@ -9,13 +9,29 @@ no full download; DuckDB reads only the columns and row groups a query touches.
 from __future__ import annotations
 
 import json
+import os
 import re
 import urllib.request
 
 import duckdb
 
-BASE_HTTPS = "https://storage.googleapis.com/calcofi-db/ducklake/releases"
+BUCKET_HTTPS = "https://storage.googleapis.com/calcofi-db"
+BASE_HTTPS = f"{BUCKET_HTTPS}/ducklake/releases"
 BASE_S3 = "s3://calcofi-db/ducklake/releases"
+
+
+def release_prefix() -> str:
+    """The bucket-relative prefix the releases live under: ``ducklake/releases``.
+
+    ``CALCOFI_RELEASE_PREFIX`` overrides it — the release pipeline
+    (``CalCOFI/workflows`` ``test_release.qmd``) sets it to
+    ``ducklake-staging/releases`` on a staging run so this package reads the release
+    it is about to gate rather than the promoted one. Users never set it."""
+    return (os.environ.get("CALCOFI_RELEASE_PREFIX") or "ducklake/releases").strip("/")
+
+
+def _base_https() -> str:
+    return f"{BUCKET_HTTPS}/{release_prefix()}"
 
 
 def _fetch_text(url: str) -> str:
@@ -25,13 +41,20 @@ def _fetch_text(url: str) -> str:
 
 def cc_list_versions() -> list[dict]:
     """All published release versions (newest first), from ``versions.json``."""
-    return json.loads(_fetch_text(f"{BASE_HTTPS}/versions.json"))["versions"]
+    return json.loads(_fetch_text(f"{_base_https()}/versions.json"))["versions"]
 
 
 def cc_resolve_version(version: str = "latest") -> str:
-    """Resolve ``"latest"`` to the promoted version string (e.g. ``v2026.08.14``)."""
+    """Resolve ``"latest"`` to the promoted version string (e.g. ``v2026.08.14``).
+
+    ``CALCOFI_RELEASE_VERSION``, when set, is what ``"latest"`` resolves to: the release
+    pipeline points it at the freshly uploaded, not-yet-promoted release so the README
+    examples (``tests/test_readme.py``) gate its promotion. Users never set it."""
     if version == "latest":
-        return _fetch_text(f"{BASE_HTTPS}/latest.txt").strip().splitlines()[0]
+        env = os.environ.get("CALCOFI_RELEASE_VERSION", "").strip()
+        if env:
+            return env
+        return _fetch_text(f"{_base_https()}/latest.txt").strip().splitlines()[0]
     if not version.startswith("v"):
         raise ValueError(f"version must be 'latest' or like 'v2026.08.14', got {version!r}")
     _raise_if_retired(version)
@@ -66,10 +89,7 @@ def _raise_if_retired(version: str, versions: list[dict] | None = None) -> None:
 def cc_catalog(version: str = "latest") -> dict:
     """The release ``catalog.json``: table names, row counts, partitioned/supplemental flags."""
     version = cc_resolve_version(version)
-    return json.loads(_fetch_text(f"{BASE_HTTPS}/{version}/catalog.json"))
-
-
-BUCKET_HTTPS = "https://storage.googleapis.com/calcofi-db"
+    return json.loads(_fetch_text(f"{_base_https()}/{version}/catalog.json"))
 
 
 def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -> dict:

@@ -14,6 +14,9 @@ hooks:
   - hooks/version.py
   # publishes the repo-root CHANGELOG.md as the Changelog page (no copy in docs/)
   - hooks/changelog.py
+  # publishes the repo-root README.md as the Home page (no docs/index.md): the README the
+  # tests execute is the page the site shows
+  - hooks/readme.py
 
 theme:
   name: material

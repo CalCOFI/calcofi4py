@@ -8,11 +8,10 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_examples_quote_the_current_version():
-    """README.md and docs/index.md open their examples with `cc.__version__  # '<ver>'`."""
-    for f in ("README.md", "docs/index.md"):
-        text = (ROOT / f).read_text()
-        quoted = set(re.findall(r"cc\.__version__\s+# '([^']+)'", text))
-        assert quoted == {calcofi4py.__version__}, f"{f} quotes {quoted}, package is {calcofi4py.__version__}"
+    """README.md opens its examples with `cc.__version__  # '<ver>'` (docs/index.md IS the README)."""
+    text = (ROOT / "README.md").read_text()
+    quoted = set(re.findall(r"cc\.__version__\s+# '([^']+)'", text))
+    assert quoted == {calcofi4py.__version__}, f"README.md quotes {quoted}, package is {calcofi4py.__version__}"
 
 
 def test_pyproject_matches_dunder_version():
@@ -81,3 +80,26 @@ def test_changelog_hook_publishes_the_root_file(tmp_path):
     page = files.get_file_from_path("changelog.md")
     assert page is not None and page.content_string == CHANGELOG.read_text()
     assert not (ROOT / "docs" / "changelog.md").exists(), "keep the single source at the repo root"
+
+
+def test_readme_hook_publishes_the_root_file_as_home(tmp_path):
+    """The site's Home page IS README.md (hooks/readme.py) — the file tests/test_readme.py executes.
+
+    Until 2026-09-09 docs/index.md was a hand-kept copy; it had already dropped the README's
+    quality-flag example."""
+    pytest = __import__("pytest")
+    pytest.importorskip("mkdocs")
+    from mkdocs.config.defaults import MkDocsConfig
+    from mkdocs.structure.files import Files
+
+    cfg = MkDocsConfig(config_file_path=str(ROOT / "mkdocs.yml"))
+    cfg.load_dict({"site_name": "t", "docs_dir": "docs", "site_dir": str(tmp_path / "site"),
+                   "hooks": ["hooks/readme.py"]})
+    errors, _ = cfg.validate()
+    assert not errors, errors
+    files = cfg.plugins.run_event("files", Files([]), config=cfg)
+    page = files.get_file_from_path("index.md")
+    readme = (ROOT / "README.md").read_text()
+    assert page is not None
+    assert page.content_string == readme.replace("https://calcofi.io/calcofi4py/assets/logo.svg", "assets/logo.svg")
+    assert not (ROOT / "docs" / "index.md").exists(), "keep the single source at the repo root"

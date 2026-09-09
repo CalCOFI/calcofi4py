@@ -34,12 +34,12 @@ touches, straight over HTTPS.
 
 ```python
 import calcofi4py as cc
-cc.__version__                             # '0.7.0' — confirm before copying the examples below
+cc.__version__                             # '0.9.1' — confirm before copying the examples below
 
 con = cc.cc_get_db()                       # latest release, every table as a view
 con.sql("SHOW TABLES")
 df = con.sql("""
-  SELECT date_trunc('year', s.datetime_utc) AS year, count(*) AS casts
+  SELECT date_trunc('year', s.datetime) AS year, count(*) AS casts   -- sample.datetime is UTC
   FROM sample s WHERE s.dataset_key = 'calcofi_ctd-cast'
   GROUP BY 1 ORDER BY 1
 """).df()
@@ -66,7 +66,7 @@ lives there and in no script, ever).
 
 ```python
 import calcofi4py as cc
-cc.__version__                             # '0.7.0' — cc_withdraw_flags() needs >= 0.3.5
+cc.__version__                             # '0.9.1' — cc_withdraw_flags() needs >= 0.3.5
 
 con = cc.cc_pg_connect(tunnel=True)        # opens `ssh -N calcofi` for you; ~/.pgpass auth
 con.execute("SELECT count(*) FROM ctd.cast WHERE is_best_stage").fetchone()
@@ -170,6 +170,15 @@ that makes the page a reproducible record. Pre-rendered by someone with an accou
 
 ```bash
 pip install -e ".[dev]"
-pytest -q                       # pure-logic + (if online) release tests
+pytest -q                       # pure-logic + (if online) release tests, including this README
 CALCOFI_PG_TEST=1 pytest -q     # + live PostgreSQL tests (tunnel + ~/.pgpass)
 ```
+
+**The examples above are tests.** `tests/test_readme.py` runs every `python` block of this
+README: the release blocks against the promoted release on every push (`.github/workflows/test.yml`),
+the PostgreSQL blocks with `CALCOFI_PG_TEST=1`. The CalCOFI database release pipeline
+(`CalCOFI/workflows` `test_release.qmd`) runs the same test against each new release
+*before* promoting it, pointed there by `CALCOFI_RELEASE_VERSION` (and
+`CALCOFI_RELEASE_PREFIX` on a staging run), so a column the release renames fails the
+release, not the reader. A block that must not run under a test starts with
+`# readme: skip` — none does today.

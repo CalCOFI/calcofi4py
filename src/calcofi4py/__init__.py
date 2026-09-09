@@ -114,7 +114,7 @@ __all__ = [
     "view_sql",
     "view_tables",
 ]
-__version__ = "0.7.0"
+__version__ = "0.9.1"
 
 # software citation (the package, not the data — cc_cite() is for the data; mirrors R's
 # `citation("calcofi4r")`, which reads DESCRIPTION's Authors@R)

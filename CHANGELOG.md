@@ -8,8 +8,22 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
 
+## 0.9.1 (2026-09-09)
 
-## 0.9.0
+- **The README's examples are tests.** The opening release example queried `s.datetime_utc`; the
+  column is `sample.datetime` (UTC), and a researcher was the first to run it. `tests/test_readme.py`
+  now executes every `python` block of the README — the release blocks on every push, the PostgreSQL
+  blocks under `CALCOFI_PG_TEST=1` — and the database release pipeline (`CalCOFI/workflows`
+  `test_release.qmd`) runs the same test against each new release before promoting it.
+- `CALCOFI_RELEASE_VERSION` and `CALCOFI_RELEASE_PREFIX` environment variables redirect `"latest"`
+  and the releases prefix; they exist for that pipeline (a not-yet-promoted release, a staging bucket)
+  and users never set them. `release_prefix()` reports the prefix in force.
+- The docs Home page is the README (`hooks/readme.py`), not a hand-kept `docs/index.md` that had
+  already dropped the quality-flag example.
+- `__version__` said `0.7.0` through 0.8.0 and 0.9.0 (`pyproject.toml` disagreed, and the check that
+  catches it had not been run); the two headings below now carry their dates.
+
+## 0.9.0 (2026-09-07)
 
 - `interpolate(nmax=0)` — `nmax > 0` (the Explorer's *every site* grain uses 24) fits the `nmax` nearest points
   within `3 * mask_km` per cell instead of one global system: one small solve each, which returns the value and
@@ -17,7 +31,7 @@ you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
   500, both drawn by `lcg_sample()`, a seeded generator shared byte-for-byte with the browser and `calcofi4r`.
   `Fit` carries `nmax`, `n_loo` and `n_fit`. Not for `"tps"`. The shared fixture gained the two local cases.
 
-## 0.8.0
+## 0.8.0 (2026-09-07)
 
 - New `interpolate(points, method="ok", cell_deg=0.06, mask_km=60, se=True)` — the **same algorithm as
   `calcofi.io/explore`'s Contours lens** (and `calcofi4r::cc_interpolate()`), so a surface made in Python

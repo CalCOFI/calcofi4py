@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 import urllib.request
 
-from .release import BUCKET_HTTPS, cc_resolve_version
+from .release import BUCKET_HTTPS, cc_resolve_version, release_prefix
 
 
 def cc_dataset_page_url(dataset_key: str) -> str:
@@ -86,5 +86,5 @@ def cc_datasets(
     >>> cc_datasets(what="holdings")
     """
     version = cc_resolve_version(version)
-    url = f"{base_https}/ducklake/releases/{version}/datasets.json"
+    url = f"{base_https}/{release_prefix()}/{version}/datasets.json"
     return _datasets_read(url, what=what, version_hint=version)
