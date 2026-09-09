@@ -7,6 +7,9 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.9.2 (2026-09-09)
+
+- `release_prefix()` is exported from the package, as 0.9.1's notes already said it was.
 
 ## 0.9.1 (2026-09-09)
 

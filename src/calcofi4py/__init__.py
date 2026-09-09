@@ -37,6 +37,7 @@ from .release import (
     cc_list_versions,
     cc_query,
     cc_resolve_version,
+    release_prefix,
     qual_ok_sql,
     density_sql,
     default_stage,
@@ -114,7 +115,7 @@ __all__ = [
     "view_sql",
     "view_tables",
 ]
-__version__ = "0.9.1"
+__version__ = "0.9.2"
 
 # software citation (the package, not the data — cc_cite() is for the data; mirrors R's
 # `citation("calcofi4r")`, which reads DESCRIPTION's Authors@R)
