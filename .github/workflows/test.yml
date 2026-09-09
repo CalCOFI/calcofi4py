@@ -2,6 +2,9 @@ name: test
 on:
   push: {branches: [main]}
   pull_request:
+  # the release pipeline (CalCOFI/workflows test_release.qmd) dispatches this after promoting a
+  # release, so the README examples re-run against the new latest
+  workflow_dispatch:
 jobs:
   pytest:
     runs-on: ubuntu-latest
