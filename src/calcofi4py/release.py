@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import urllib.error
 import urllib.request
 
 import duckdb
@@ -87,9 +88,18 @@ def _raise_if_retired(version: str, versions: list[dict] | None = None) -> None:
 
 
 def cc_catalog(version: str = "latest") -> dict:
-    """The release ``catalog.json``: table names, row counts, partitioned/supplemental flags."""
+    """The release ``catalog.json``: table names, row counts, partitioned/supplemental flags.
+
+    Under a ``CALCOFI_RELEASE_PREFIX`` override (the release pipeline's staging run) only the
+    release under test exists there; a pinned historical version — the README's
+    ``cc_get_db("v2026.08.14")`` — is read from the promoted prefix instead."""
     version = cc_resolve_version(version)
-    return json.loads(_fetch_text(f"{_base_https()}/{version}/catalog.json"))
+    try:
+        return json.loads(_fetch_text(f"{_base_https()}/{version}/catalog.json"))
+    except urllib.error.HTTPError as e:
+        if e.code != 404 or release_prefix() == "ducklake/releases":
+            raise
+        return json.loads(_fetch_text(f"{BASE_HTTPS}/{version}/catalog.json"))
 
 
 def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -> dict:

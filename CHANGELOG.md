@@ -7,6 +7,13 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.9.3 (2026-09-10)
+
+- `cc_catalog()`: under a `CALCOFI_RELEASE_PREFIX` override a version that is not there (a pinned
+  historical release, e.g. the README's `cc_get_db("v2026.08.14")`) is read from the promoted
+  `ducklake/releases` prefix instead of raising 404 — the first staging run with the README gate
+  failed on exactly that block.
+
 ## 0.9.2 (2026-09-09)
 
 - `release_prefix()` is exported from the package, as 0.9.1's notes already said it was.
