@@ -22,8 +22,8 @@ theme:
   name: material
   # overrides/main.html: the calcofi.io brand pre-paint (https://calcofi.io/brand/v2/)
   custom_dir: overrides
-  # the calcofi4py squircle, one of the brand's two designed favicon exceptions
-  logo: assets/logo.svg
+  # the header logo is the calcofi.io lockup (overrides/partials/logo.html); the calcofi4py
+  # squircle stays the favicon, one of the brand's two designed favicon exceptions
   favicon: assets/logo.svg
   # light by default (first palette entry; brand v2, 2026-09-04), dark one toggle away
   palette:

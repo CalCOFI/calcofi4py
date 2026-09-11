@@ -15,3 +15,7 @@
 /* the calcofi4r-family navy header regardless of scheme */
 [data-md-color-primary=custom] .md-header,
 [data-md-color-primary=custom] .md-tabs { background-color: #193E6D; }
+/* the calcofi.io lockup in material's logo slot (overrides/partials/logo.html), at the brand's app
+   header height, 28 px (1.4rem on material's 20 px root) */
+.md-header__button.md-logo img.cc-lockup,
+.md-nav__button.md-logo img.cc-lockup { height: 1.4rem; width: auto; }

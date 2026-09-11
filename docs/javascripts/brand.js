@@ -29,6 +29,12 @@
     });
   });
 
+  // material labels its logo link with the site name ("calcofi4py v…"), but the logo is the
+  // calcofi.io lockup and the link goes to calcofi.io (extra.homepage): say so
+  document.querySelectorAll("a.md-logo").forEach(function (a) {
+    a.setAttribute("title", "CalCOFI.io"); a.setAttribute("aria-label", "CalCOFI.io home");
+  });
+
   // (c) a brand toggle -> material, if a page ever adds one
   document.addEventListener("cc:theme", function (e) { pushToMaterial(e.detail.theme); });
 })();
