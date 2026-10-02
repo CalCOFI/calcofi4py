@@ -7,6 +7,14 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.9.4 (2026-10-02)
+
+- New article *From a dataset page to a data frame* (`articles/find-see-pull.qmd`): from a calcofi.io dataset page to a
+  DataFrame, with the bottle database (to 2021) and the CTD casts (to the present) side by side, flags and data stages
+  applied, per-cast mixed-layer depth and chlorophyll, and an eight-variable wide pull; it runs on the public release
+  with no account.
+- `scripts/render_articles.sh` takes article paths, so one article can be re-rendered alone.
+
 ## 0.9.3 (2026-09-10)
 
 - `cc_catalog()`: under a `CALCOFI_RELEASE_PREFIX` override a version that is not there (a pinned
