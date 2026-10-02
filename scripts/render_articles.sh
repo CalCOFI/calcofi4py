@@ -13,6 +13,9 @@
 # Needs: a server account (https://calcofi.io/docs/server-access.html) and, in the Python
 # you run this with: calcofi4py[viz] jupytext nbconvert ipykernel  (pip install -e ".[dev]").
 #   scripts/render_articles.sh && git add docs/articles && git commit -m "articles: re-rendered"
+# Name articles to render only those; one that reads only the public release (find-see-pull)
+# needs no account:
+#   scripts/render_articles.sh articles/find-see-pull.qmd
 set -euo pipefail
 cd "$(dirname "$0")/.."
 PY=${PYTHON:-$(command -v python3)}
@@ -23,7 +26,8 @@ export PATH="$(dirname "$PY"):$PATH"   # the kernelspec's argv says `python`: ma
 export JUPYTER_DATA_DIR="$("$PY" -c 'import sys; print(sys.prefix)')/share/jupyter"
 [ -f "$JUPYTER_DATA_DIR/kernels/python3/kernel.json" ] || "$PY" -m ipykernel install --prefix "$("$PY" -c 'import sys; print(sys.prefix)')" --name python3 >/dev/null
 mkdir -p docs/articles
-for qmd in articles/*.qmd; do
+[ "$#" -gt 0 ] && qmds=("$@") || qmds=(articles/*.qmd)
+for qmd in "${qmds[@]}"; do
   name=$(basename "${qmd%.qmd}")
   out="docs/articles/$name.ipynb"
   "$PY" -m jupytext --to ipynb --quiet "$qmd" -o "$out"

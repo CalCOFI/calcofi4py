@@ -5,6 +5,24 @@ What was asked and what was done, one `## YYYY-MM-DD — summary title` section 
 are quoted; mid-turn messages are listed under the prompt they interrupted. Commits and tags
 are named so a reader can `git show` them. No secrets, ever.
 
+## 2026-10-02 — find-see-pull article (WS-1002D), branch ws-1002d
+
+### 1. "Execute the brief WS-1002D (branch id 1002d)" (agent run from CalCOFI/workflows)
+
+**Response.** New article `articles/find-see-pull.qmd` ("From a dataset page to a data frame"),
+pre-rendered to `docs/articles/find-see-pull.ipynb` against the public release v2026.10.01 (no
+account): dataset page → Explorer → `cc_get_db()`; CTD cast profiles 1996 → present with
+`qual_ok_sql()` and `data_stage`; the bottle database and the casts' `btl_*` values side by side
+with a `source` column; per-cast MLD / chlorophyll from `sample_measurement`; the eight-variable wide
+shape with `order_occ`; a ten-line pull; `cc_cite()`. Added to the mkdocs nav and to
+`tests/test_docs.py` (every article rendered, executed, in the nav; this one reads through the
+catalog). `scripts/render_articles.sh` takes article paths, so a release-only article renders
+without the tunnel. No version bump (the integrator assigns it), so no CHANGELOG heading: the
+test forbids an `## Unreleased` section. `pytest -q`: 61 passed, 5 skipped (PostgreSQL), 1 failed —
+`test_mkdocs_hook_reads_the_version`, because the shared `.venv`'s installed metadata says 0.9.2
+while `__version__` is 0.9.3; it fails the same way on `main`, and reinstalling is not this
+branch's to do.
+
 ## 2026-08-21 — changelog, 0.3.6 release, unattended release flow
 
 Versions 0.3.5 → 0.3.6. Commits `ef94fbe`, `1fcfce9`, `3cdf937` (Ben), `bdb9384`; tag `v0.3.6`.

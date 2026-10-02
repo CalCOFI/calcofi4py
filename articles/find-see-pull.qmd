@@ -1,0 +1,309 @@
+# From a dataset page to a data frame
+
+A question we hear: *"I asked the API for bottle data from 1996 to 2023 and it stops in
+May 2021. Is the rest lost?"* It is not lost, and the answer is a short walk: the
+**dataset page** says which dataset holds which years, the **Explorer** shows them, and
+**calcofi4py** pulls them into a DataFrame. This article takes that walk with the two
+datasets that meet at that seam — the hydrographic **bottle database**
+(`calcofi_bottle`) and the **CTD casts** (`calcofi_ctd-cast`) — and ends with the same
+eight variables, wide, that the question asked for.
+
+Everything here runs against the public release: no account, no credentials, no path
+typed by hand (the package resolves every table through the release catalog).
+
+```{python}
+import pandas as pd
+import calcofi4py as cc
+
+print("calcofi4py", cc.__version__)        # the version every output below was produced with
+
+pd.options.display.max_rows = 12
+pd.options.display.width = 140
+
+VERSION = cc.cc_resolve_version("latest")  # pin this string in your own code for a reproducible pull
+rel = cc.cc_get_db(VERSION, tables=["sample", "obs_env", "sample_measurement", "measurement_type"])
+rel.execute("SET enable_progress_bar = false")   # no Jupyter progress-bar widgets in a static page
+print("release", VERSION)
+```
+
+## 1. Read the dataset page
+
+Every dataset has a page at `https://calcofi.io/datasets/{dataset_key}/`, built from the
+release's own dataset record (`datasets.json`). Its header answers *what years, how many
+variables*; its **Access** section has three blocks worth knowing:
+
+- **Explore** — the apps that open on this dataset (the CalCOFI Explorer first);
+- **Get the data** — the release's Parquet objects, the CF netCDF files and the ERDDAP
+  datasets, each a link;
+- **Code** — ready-to-paste R and Python (`cc_get_db()`, then cite) and plain DuckDB SQL
+  against the object URL.
+
+The same record is one call away, so the years below are read from the release, not typed:
+
+```{python}
+pages = pd.DataFrame([
+    {"dataset_key": d["dataset_key"], "name": d["dataset_name_short"],
+     "years": f'{d["coverage"]["year_min"]}–{d["coverage"]["year_max"]}',
+     "variables": d["coverage"]["n_variables"], "sampling events": d["coverage"]["n_roots"],
+     "page": d["links"]["page"]}
+    for d in cc.cc_datasets(VERSION)
+    if d["dataset_key"] in ("calcofi_bottle", "calcofi_ctd-cast", "calcofi_ctd-derived")])
+pages
+```
+
+And the same seam straight from the `sample` table — the first and last sampling event of each:
+
+```{python}
+rel.sql("""
+  SELECT dataset_key, count(*) AS sampling_events,
+         min(datetime)::DATE AS first, max(datetime)::DATE AS last
+  FROM sample
+  WHERE dataset_key IN ('calcofi_bottle', 'calcofi_ctd-cast')
+  GROUP BY 1 ORDER BY 1
+""").df()
+```
+
+So a query on `calcofi_bottle` ends in 2021 by construction: that is where the bottle
+database, as the provider publishes it, ends. The CTD casts carry on, and — this is the
+part that is easy to miss — they carry the **bottle samples drawn on those casts** too, as
+measurement types prefixed `btl_` (plus `salinity_btl`, `oxygen_btl_ml_l`,
+`oxygen_btl_umol_kg`). On the CTD Cast Files page they sit in the variable list next to
+the sensor series.
+
+## 2. The same question in the Explorer
+
+The [CalCOFI Explorer](https://calcofi.io/explore/) answers it without code. Pick a
+variable (*Temperature* pools the bottle and CTD series, which are comparable), set the
+years, and the map, the years strip and the depth strip redraw; the **Datasets** pills under
+*Refine* show which dataset each value comes from, so the bottle database stopping in 2021
+and the CTD casts running on are visible at a glance. For example,
+[temperature, CTD casts only, 1996–2026](https://calcofi.io/explore/?lens=station&var=temperature&years=1996-2026&datasets=calcofi_ctd-cast).
+
+Under **Share**: *Download data (zip)* hands over the observations, the exact SQL, the
+citations and `reproduce.py`; *Copy code › Python* copies a script that runs the same query
+with DuckDB; *Copy link* is the whole view as a URL. The code it copies reads the same
+release objects as the package does below.
+
+## 3. The same pull with calcofi4py
+
+### CTD cast profiles, 1996 → present
+
+Which CTD series answers "temperature", "salinity", "oxygen"? The release says so itself:
+`measurement_type.variable` groups the series that measure the same thing across datasets.
+
+```{python}
+rel.sql("""
+  SELECT variable, measurement_type, dataset, units, description
+  FROM measurement_type WHERE variable IS NOT NULL ORDER BY variable, dataset
+""").df()
+```
+
+The CTD headline series are the sensor averages, with salinity and oxygen
+**station-corrected** against the bottles (the provider's own guidance: station-corrected
+data are the best). Chlorophyll and nitrate on a cast come two ways: a sensor estimate
+corrected to the bottles (`est_*_sta_corr`, fluorometer and ISUS), and the bottle value
+itself (`btl_*`).
+
+Two filters belong on every pull. **Quality flags:** `measurement_qual` is the provider's
+own code, and `qual_ok_sql()` is the predicate that drops what the provider flagged
+questionable or bad (CTD codes 8 and 9). **Data stage:** every CTD cast carries
+`sample.data_stage` — `final` (fully processed), `preliminary_with_bottle` (the bottle
+merge has run, so corrected salinity and oxygen and the `btl_*` values exist) or
+`preliminary_without_bottle` (sensor data only: no corrected salinity or oxygen and no
+bottle values yet), and a cruise moves up the ladder as the provider reprocesses it.
+
+```{python}
+CTD = ["temperature_ave", "salinity_ave_corr", "oxygen_ml_l_ave_sta_corr",
+       "est_chlorophyll_a_sta_corr", "btl_chlorophyll_a",
+       "est_nitrate_sta_corr", "btl_nitrate"]
+ctd_in = ", ".join(f"'{t}'" for t in CTD)
+
+flags = rel.sql(f"""
+  SELECT measurement_type, count(*) AS rows,
+         count(*) FILTER (WHERE NOT {cc.qual_ok_sql('o')}) AS flagged_dropped
+  FROM obs_env o
+  WHERE o.dataset_key = 'calcofi_ctd-cast' AND o.measurement_type IN ({ctd_in})
+    AND o.datetime >= '1996-04-01'
+  GROUP BY 1 ORDER BY 1
+""").df()
+flags
+```
+
+How many casts per year carry each series, by data stage — the table to read before
+trusting a trend at the recent end:
+
+```{python}
+casts = rel.sql(f"""
+  SELECT year(s.datetime) AS year, s.data_stage, o.measurement_type,
+         count(DISTINCT o.sample_key) AS casts
+  FROM obs_env o JOIN sample s ON s.sample_key = o.sample_key
+  WHERE o.dataset_key = 'calcofi_ctd-cast' AND o.measurement_type IN ({ctd_in})
+    AND s.datetime >= '1996-04-01' AND {cc.qual_ok_sql('o')}
+  GROUP BY ALL
+""").df()
+by_year = (casts.pivot_table(index=["year", "data_stage"], columns="measurement_type",
+                             values="casts", fill_value=0)
+                .reindex(columns=CTD).astype(int).reset_index())
+by_year.columns.name = None
+by_year.query("year >= 2018")
+```
+
+The sensor series run to the last cruise; the bottle-derived ones stop where the bottle
+merge has not yet happened. `btl_nitrate` thins in 2022–2023 because the provider's
+preliminary CTD + bottle files for most of those cruises carry bottle depths, salinity,
+oxygen and chlorophyll but no nutrients yet.
+
+### The bottle database to 2021, and the bottle values on the casts after it
+
+The bottle database and the `btl_*` values on the CTD casts come from the same bottles for
+the cruises they share, but they are **different products**: the bottle database is the
+provider's reconciled archive with its own quality codes, the `btl_*` values are what the
+CTD + bottle files carry, with no quality codes at all. Whether they agree value for value
+is a question we have put to the provider. So they are shown **side by side with a
+`source` column, never merged** — a merge would silently double-count the years they
+overlap.
+
+```{python}
+seam = rel.sql(f"""
+  SELECT 'bottle database' AS source, o.measurement_type, o.root_id, o.cruise_key, o.site_key,
+         o.datetime, o.depth_min_m AS depth_m, o.value
+  FROM obs_env o
+  WHERE o.dataset_key = 'calcofi_bottle' AND o.measurement_type = 'nitrate'
+    AND o.datetime >= '2015-01-01' AND {cc.qual_ok_sql('o')}
+  UNION ALL
+  SELECT 'CTD cast btl_*' AS source, o.measurement_type, o.root_id, o.cruise_key, o.site_key,
+         o.datetime, o.depth_min_m AS depth_m, o.value
+  FROM obs_env o
+  WHERE o.dataset_key = 'calcofi_ctd-cast' AND o.measurement_type = 'btl_nitrate'
+    AND o.datetime >= '2015-01-01' AND {cc.qual_ok_sql('o')}
+""").df()
+side = (seam.assign(year=seam.datetime.dt.year)
+            .groupby(["year", "source"]).root_id.nunique()     # root_id = the cast, in both datasets
+            .unstack("source", fill_value=0))
+side.columns.name = "casts with nitrate"
+side
+```
+
+Where both exist they count nearly the same casts; after May 2021 only the CTD casts carry
+nitrate. For a series that crosses the seam, pick one source per period and keep the
+`source` column in your table, so a reader can see where it changes.
+
+## 4. Per-cast products: mixed-layer depth and chlorophyll
+
+Some quantities have one value per cast, not one per depth: the mixed-layer depth (three
+definitions) and the chlorophyll maximum and depth-integrated chlorophyll. They are the
+`calcofi_ctd-derived` dataset, in the `sample_measurement` table, keyed to the CTD cast
+they were computed from.
+
+```{python}
+derived = rel.sql("""
+  SELECT s.sample_key, s.cruise_key, s.site_key, s.datetime, s.data_stage,
+         m.measurement_type, m.measurement_value
+  FROM sample_measurement m JOIN sample s ON s.sample_key = m.sample_key
+  WHERE m.dataset_key = 'calcofi_ctd-derived' AND s.datetime >= '1996-04-01'
+""").df()
+per_cast = (derived.pivot_table(index=["sample_key", "cruise_key", "site_key", "datetime", "data_stage"],
+                                columns="measurement_type", values="measurement_value")
+                   .reset_index())
+per_cast.columns.name = None
+print(f"{len(per_cast):,} casts, {per_cast.datetime.min():%Y-%m-%d} → {per_cast.datetime.max():%Y-%m-%d}")
+rel.sql("""
+  SELECT measurement_type, units, description FROM measurement_type
+  WHERE measurement_type IN (SELECT DISTINCT measurement_type FROM sample_measurement
+                             WHERE dataset_key = 'calcofi_ctd-derived')
+  ORDER BY 1
+""").df()
+```
+
+```{python}
+per_cast.sort_values("datetime").tail(5)
+```
+
+The most recent casts show the data stages again: a `preliminary_without_bottle` cast has
+no corrected salinity (so no density) and no bottle-corrected chlorophyll, so only the
+temperature-based mixed-layer depth.
+(The years on the dataset page count the per-depth series of `calcofi_ctd-derived`; the
+per-cast table above can run later.)
+
+## 5. The original shape: eight variables, wide, with `order_occ`
+
+The question asked for `depth_r, temperature, salinity, bottom_depth, chlorophyll_a,
+nitrate, nitrite, oxygen_ml_l` from the bottle database, pivoted wide with `order_occ`. On
+the CTD casts the same eight are: depth is the row's own `depth_min_m`, bottom depth is
+the cast's `seafloor_depth_m` (on `sample`, beside `order_occ`), and the other six map to
+the series below. Sensor series are on a 10 m grid (plus inflections and every bottle
+depth); `btl_*` values sit at the bottle depths, so their columns are empty on the rows
+between bottles. Swap the dictionary to change the variables.
+
+```{python}
+EIGHT = {                                   # her name -> the CTD-cast series
+    "temperature":   "temperature_ave",
+    "salinity":      "salinity_ave_corr",
+    "oxygen_ml_l":   "oxygen_ml_l_ave_sta_corr",
+    "chlorophyll_a": "btl_chlorophyll_a",
+    "nitrate":       "btl_nitrate",
+    "nitrite":       "btl_nitrite",
+}
+
+def ctd_wide(columns=EIGHT, start="1996-04-01", end=None, con=rel):
+    """CTD-cast profiles, one row per cast x depth, one column per variable, flags applied."""
+    pick = ", ".join(f"max(o.value) FILTER (WHERE o.measurement_type = '{t}') AS {name}"
+                     for name, t in columns.items())
+    types = ", ".join(f"'{t}'" for t in columns.values())
+    until = f"AND s.datetime < '{end}'" if end else ""
+    return con.sql(f"""
+      SELECT s.sample_key, s.cruise_key, s.site_key, s.order_occ, s.datetime,
+             s.latitude, s.longitude, s.data_stage,
+             o.depth_min_m AS depth_r, s.seafloor_depth_m AS bottom_depth, {pick}
+      FROM obs_env o JOIN sample s ON s.sample_key = o.sample_key
+      WHERE o.dataset_key = 'calcofi_ctd-cast' AND o.measurement_type IN ({types})
+        AND s.datetime >= '{start}' {until} AND {cc.qual_ok_sql('o')}
+      GROUP BY ALL ORDER BY s.datetime, s.sample_key, depth_r
+    """).df()
+
+wide = ctd_wide()
+print(f"{wide.shape[0]:,} rows x {wide.shape[1]} columns; {wide.sample_key.nunique():,} casts, "
+      f"{wide.datetime.min():%Y-%m-%d} → {wide.datetime.max():%Y-%m-%d}")
+wide.dropna(subset=["nitrate"]).tail(5)
+```
+
+`wide.to_csv("calcofi_ctd_casts_1996-present.csv", index=False)` writes it out. To keep
+only fully processed casts, filter `data_stage == "final"`; to see what a cruise is still
+waiting for, group by `data_stage`.
+
+## 6. In ten lines
+
+The same pull, minimal — CTD temperature, salinity, oxygen, chlorophyll and nitrate,
+1996 → present, flags applied, long then wide:
+
+```{python}
+import calcofi4py as cc
+con = cc.cc_get_db(tables=["obs_env", "sample"])            # latest public release, no credentials
+con.execute("SET enable_progress_bar = false")              # in Jupyter only: no progress widget
+df = con.sql(f"""
+  SELECT s.cruise_key, s.order_occ, s.datetime, s.latitude, s.longitude, s.data_stage,
+         o.depth_min_m AS depth_m, o.measurement_type, o.value
+  FROM obs_env o JOIN sample s ON s.sample_key = o.sample_key
+  WHERE o.dataset_key = 'calcofi_ctd-cast' AND s.datetime >= '1996-04-01' AND {cc.qual_ok_sql('o')}
+    AND o.measurement_type IN ('temperature_ave', 'salinity_ave_corr', 'oxygen_ml_l_ave_sta_corr',
+                               'est_chlorophyll_a_sta_corr', 'btl_chlorophyll_a', 'btl_nitrate')""").df()
+wide10 = df.pivot_table(index=["cruise_key", "order_occ", "datetime", "latitude", "longitude",
+                               "data_stage", "depth_m"], columns="measurement_type", values="value").reset_index()
+print(f"{len(df):,} values -> {wide10.shape[0]:,} rows x {wide10.shape[1]} columns")
+```
+
+## 7. How to cite
+
+Cite the datasets you used and the release they came from — `cc_cite()` formats both
+(text, BibTeX or CSL-JSON) from the release's own records:
+
+```{python}
+for entry in cc.cc_cite(["calcofi_ctd-cast", "calcofi_bottle", "calcofi_ctd-derived"], version=VERSION):
+    print(entry, end="\n\n")
+```
+
+## Session info
+
+```{python}
+print(cc.cc_session_info(extra={"release": VERSION}))
+```

@@ -26,6 +26,45 @@ def test_mkdocs_hook_reads_the_version():
     assert mod.calcofi4py_version() == calcofi4py.__version__
 
 
+# ── articles ─────────────────────────────────────────────────────────────────
+
+def _code_cells(name):
+    import json
+    nb = json.loads((ROOT / "docs" / "articles" / f"{name}.ipynb").read_text())
+    return [c for c in nb["cells"] if c["cell_type"] == "code"]
+
+
+def test_every_article_is_rendered_and_in_the_nav():
+    """articles/<name>.qmd -> a committed, executed docs/articles/<name>.ipynb -> a mkdocs nav entry.
+
+    An article missing from the nav builds but nobody can reach it; one never rendered ships its
+    source with no outputs (mkdocs-jupyter runs with execute: false)."""
+    nav = (ROOT / "mkdocs.yml").read_text()
+    for qmd in sorted((ROOT / "articles").glob("*.qmd")):
+        name = qmd.stem
+        assert (ROOT / "docs" / "articles" / f"{name}.ipynb").exists(), \
+            f"{name}.qmd is not rendered: scripts/render_articles.sh articles/{name}.qmd"
+        assert f"articles/{name}.ipynb" in nav, f"articles/{name}.ipynb is not in mkdocs.yml nav"
+        cells = _code_cells(name)
+        assert any(c.get("outputs") for c in cells), f"{name}.ipynb has no outputs: it was not executed"
+        errs = [o for c in cells for o in c.get("outputs", []) if o.get("output_type") == "error"]
+        assert not errs, f"{name}.ipynb stores an error: {errs[0].get('ename')}: {errs[0].get('evalue')}"
+
+
+def test_find_see_pull_reads_through_the_catalog():
+    """The public-release article never types a release path and shows the seam it was written for:
+    the bottle database and the CTD casts' btl_* values side by side with a source column,
+    flags applied with qual_ok_sql(), the data stage named, and the citation through cc_cite()."""
+    src = (ROOT / "articles" / "find-see-pull.qmd").read_text()
+    for hand_built in ("ducklake/releases", "storage.googleapis.com", "s3://", "read_parquet("):
+        assert hand_built not in src, f"find-see-pull.qmd builds a path by hand ({hand_built!r})"
+    for needed in ("cc_get_db(", "qual_ok_sql(", "data_stage", "'bottle database' AS source",
+                   "btl_nitrate", "sample_measurement", "order_occ", "cc_cite("):
+        assert needed in src, f"find-see-pull.qmd lost {needed!r}"
+    every_cell_ran = all(c.get("outputs") for c in _code_cells("find-see-pull"))
+    assert every_cell_ran, "a find-see-pull.ipynb code cell has no output"
+
+
 # ── changelog ────────────────────────────────────────────────────────────────
 
 CHANGELOG = ROOT / "CHANGELOG.md"

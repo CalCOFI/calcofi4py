@@ -44,6 +44,7 @@ nav:
   - Home: index.md
   - Citing CalCOFI data: citing.md
   - Articles:
+      - From a dataset page to a data frame: articles/find-see-pull.ipynb
       - CTD QA/QC walkthrough: articles/ctd-qaqc.ipynb
   - API reference: reference.md
   - Changelog: changelog.md
