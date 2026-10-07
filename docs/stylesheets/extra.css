@@ -1,3 +1,9 @@
+/* the brand face (calcofi.io/brand/v2/fonts.css); Material otherwise sets Roboto,
+   so Source Sans 3 is never requested */
+:root {
+  --md-text-font: "Source Sans 3";
+}
+
 /* API reference: functions are subordinate to their section headings —
    indent the whole mkdocstrings object block and shrink its heading, so a
    scanning eye sees two levels, not one flat list. */
