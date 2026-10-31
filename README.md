@@ -34,7 +34,7 @@ touches, straight over HTTPS.
 
 ```python
 import calcofi4py as cc
-cc.__version__                             # '0.9.4' — confirm before copying the examples below
+cc.__version__                             # '0.9.5' — confirm before copying the examples below
 
 con = cc.cc_get_db()                       # latest release, every table as a view
 con.sql("SHOW TABLES")
@@ -44,7 +44,7 @@ df = con.sql("""
   GROUP BY 1 ORDER BY 1
 """).df()
 
-cc.cc_query("SELECT count(*) FROM obs").fetchone()      # one-shot
+cc.cc_query("SELECT count(*) FROM obs").fetchall()      # one-shot
 cc.cc_get_db("v2026.08.14")                             # pin a version (reproducible)
 cc.cc_get_db(supplemental=True)                         # + obs_ctd_full (216M rows), obs_mets_full
 cc.cc_list_versions()[:3]
@@ -66,7 +66,7 @@ lives there and in no script, ever).
 
 ```python
 import calcofi4py as cc
-cc.__version__                             # '0.9.4' — cc_withdraw_flags() needs >= 0.3.5
+cc.__version__                             # '0.9.5' — cc_withdraw_flags() needs >= 0.3.5
 
 con = cc.cc_pg_connect(tunnel=True)        # opens `ssh -N calcofi` for you; ~/.pgpass auth
 con.execute("SELECT count(*) FROM ctd.cast WHERE is_best_stage").fetchone()

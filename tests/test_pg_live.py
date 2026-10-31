@@ -23,7 +23,7 @@ def test_pg_attach_joins_release_and_pg():
     cc_pg_tunnel(local_port=int(os.environ.get("PGPORT", 5432)))   # DuckDB's libpq needs the tunnel up too
     con = cc_get_db(tables=["cruise"])
     cc_pg_attach(con)
-    n = con.sql("SELECT count(*) FROM pg.ctd.file").fetchone()[0]
+    n = con.execute("SELECT count(*) FROM pg.ctd.file").fetchone()[0]
     assert n > 0
 
 

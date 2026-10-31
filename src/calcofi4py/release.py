@@ -280,7 +280,7 @@ def cc_get_db(
     in the tables it reads.
 
     >>> con = cc_get_db()
-    >>> con.sql("SELECT count(*) FROM sample").fetchone()
+    >>> con.execute("SELECT count(*) FROM sample").fetchone()
     """
     version = cc_resolve_version(version)
     catalog = cc_catalog(version)
