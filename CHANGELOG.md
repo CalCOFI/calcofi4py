@@ -7,6 +7,13 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.9.5 (2026-10-31)
+
+- Works on DuckDB 2.0, which removed `fetchone()` from a relation (`con.sql(...)` / `cc_query(...)`). The
+  README's one-shot example now ends in `.fetchall()`; the docstring examples of `cc_get_db()` and
+  `cc_pg_attach()` use `con.execute(...).fetchone()`, which works on DuckDB 1.x and 2.0 alike. No function
+  changed; code of yours that calls `.fetchone()` on a relation needs the same change.
+
 ## 0.9.4 (2026-10-02)
 
 - New article *From a dataset page to a data frame* (`articles/find-see-pull.qmd`): from a calcofi.io dataset page to a

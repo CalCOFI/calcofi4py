@@ -192,7 +192,7 @@ def cc_pg_attach(
 
     >>> con = cc_get_db()
     >>> cc_pg_attach(con)
-    >>> con.sql("SELECT count(*) FROM pg.ctd.flag").fetchone()
+    >>> con.execute("SELECT count(*) FROM pg.ctd.flag").fetchone()
     """
     host = host or _nz(os.environ.get("PGHOST")) or ("postgis" if cc_on_server() else "localhost")
     port = int(port or _nz(os.environ.get("PGPORT")) or 5432)

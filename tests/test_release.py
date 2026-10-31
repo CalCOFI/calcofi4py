@@ -36,7 +36,7 @@ def test_get_db_views_and_supplemental_gating():
     con = cc_get_db(tables=["cruise", "ship"])
     tbls = {r[0] for r in con.sql("SELECT view_name FROM duckdb_views() WHERE NOT internal").fetchall()}
     assert tbls == {"cruise", "ship"}
-    n = con.sql("SELECT count(*) FROM cruise").fetchone()[0]
+    n = con.execute("SELECT count(*) FROM cruise").fetchone()[0]
     assert n > 500
 
     con2 = cc_get_db()  # default: supplemental excluded

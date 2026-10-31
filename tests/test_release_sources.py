@@ -184,11 +184,11 @@ def test_register_catalog_serves_obs_as_the_view_over_the_pair_offline(tmp_path)
     # tables=['obs'] pulls the pair in; the deprecated objects are never bound
     con2 = _register_catalog(duckdb.connect(), cat, tables=["obs"], base_https=str(tmp_path))
     assert _views_of(con2) == {"obs", "obs_bio", "obs_env"}
-    assert con2.sql("SELECT count(*) FROM obs").fetchone()[0] == 3
+    assert con2.execute("SELECT count(*) FROM obs").fetchone()[0] == 3
     # the release after the window: no obs table, the view still answers
     con3 = _register_catalog(duckdb.connect(), fx("catalog_view_only.json"), base_https=str(tmp_path))
     assert _views_of(con3) == {"cruise", "obs", "obs_bio", "obs_env"}
-    assert con3.sql("SELECT count(*) FROM obs WHERE realm = 'env'").fetchone()[0] == 2
+    assert con3.execute("SELECT count(*) FROM obs WHERE realm = 'env'").fetchone()[0] == 2
     # a catalog without views binds exactly as before
     plain = {"version": "v1", "tables": [t for t in cat["tables"] if t["name"] == "cruise"]}
     con4 = _register_catalog(duckdb.connect(), plain, base_https=str(tmp_path))
