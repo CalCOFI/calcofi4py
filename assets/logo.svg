@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- calcofi4py mark: the calcofi4r hex sticker's palette (#193E6D navy, #2A4F7C border,
+     #F4D530 compass) on a SQUIRCLE — same family, different shape, per package language. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="calcofi4py">
+  <path d="M120 4 C214 4 236 26 236 120 C236 214 214 236 120 236 C26 236 4 214 4 120 C4 26 26 4 120 4 Z"
+        fill="#2A4F7C"/>
+  <path d="M120 14 C206 14 226 34 226 120 C226 206 206 226 120 226 C34 226 14 206 14 120 C14 34 34 14 120 14 Z"
+        fill="#193E6D"/>
+  <text x="120" y="66" text-anchor="middle" font-family="'Open Sans','Segoe UI',Helvetica,Arial,sans-serif"
+        font-size="33" font-weight="600" fill="#FCFCFC">calcofi4py</text>
+  <g transform="translate(120 148)" fill="none" stroke="#F4D530">
+    <circle r="44" stroke-width="9"/>
+    <g fill="#F4D530" stroke="none">
+      <path d="M0 -78 L11 -34 L0 -22 L-11 -34 Z"/>
+      <path d="M0 78 L11 34 L0 22 L-11 34 Z"/>
+      <path d="M-78 0 L-34 -11 L-22 0 L-34 11 Z"/>
+      <path d="M78 0 L34 -11 L22 0 L34 11 Z"/>
+      <circle r="9"/>
+    </g>
+  </g>
+</svg>
