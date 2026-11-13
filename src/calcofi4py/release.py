@@ -154,6 +154,11 @@ def release_sources(catalog: dict, table: str, base_https: str = BUCKET_HTTPS) -
             objs = [o for o in objs if "partition_by" in o]
             if twins:
                 single_file = f"{base_https}/{twins[0]['path']}"
+        # read a path once however often the catalog lists it: v2026.11.04 to v2026.11.09
+        # listed 24 obs_ctd_full paths two or three times, and reading the list as it is
+        # repeats those rows
+        seen = set()
+        objs = [o for o in objs if not (o["path"] in seen or seen.add(o["path"]))]
         paths = [o["path"] for o in objs]
         return {
             "urls": [f"{base_https}/{p}" for p in paths],
