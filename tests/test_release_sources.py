@@ -204,3 +204,20 @@ def test_retired_version_raises_naming_replacement():
         _raise_if_retired("v2026.05.15", versions)
     assert e.value.to == "v2026.06.26"
     _raise_if_retired("v2026.06.26", versions)  # kept: no error
+
+
+def test_repeated_path_is_read_once():
+    # v2026.11.04 to v2026.11.09 listed 24 obs_ctd_full paths two or three times
+    cat = fx("catalog_repeated_path.json")
+    base = "https://storage.googleapis.com/calcofi-db/ducklake/tables/obs_ctd_full/cruise_key="
+    s = release_sources(cat, "obs_ctd_full")
+    assert s["urls"] == [
+        base + "1994-03-31JD/7c12d6b2ec5697fdb745ae62/data_0.parquet",
+        base + "2015-11-32OC/6a5b5b98bed1d952b0bd5a90/data_0.parquet",
+        base + "2026-11-33P4/0d0d0d0d0d0d0d0d0d0d0d0d/data_0.parquet",
+    ]
+    assert len(s["hashes"]) == 3 and len(s["local_paths"]) == 3
+    assert s["hashes"][1] == "6a5b5b98bed1d952b0bd5a90bbbbbbbb"
+    assert release_sources(cat, "cruise")["urls"] == [
+        "https://storage.googleapis.com/calcofi-db/ducklake/tables/cruise/a1b2c3d4e5f60718293a4b5c/cruise.parquet"
+    ]

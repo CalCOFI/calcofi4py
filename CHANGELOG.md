@@ -7,6 +7,13 @@ on `main`. From 0.3.5 on every version is also a git tag, so it can be pinned:
 (earlier versions only by commit SHA). `calcofi4py.__version__` tells you which one
 you have. The R sibling's history is at https://calcofi.io/calcofi4r/news/.
 
+## 0.9.6 (2026-11-13)
+
+- `release_sources()` reads an object path once however often a catalog lists it. Releases
+  v2026.11.04 to v2026.11.09 list 24 `obs_ctd_full` paths two or three times, so a reader of that
+  table got those cruises' rows two or three times. New fixture `catalog_repeated_path.json`,
+  shared byte for byte with calcofi4r.
+
 ## 0.9.5 (2026-10-31)
 
 - Works on DuckDB 2.0, which removed `fetchone()` from a relation (`con.sql(...)` / `cc_query(...)`). The
